@@ -8,15 +8,14 @@ class AdminSitesTests(TestCase):
         self.admin_user = get_user_model().objects\
             .create_superuser("Almaub Juwal", "bd464258")
         self.client.force_login(self.admin_user)
-        email = "almabud37@gmail.com"
-        password = "bd464258"
-        name = "Almaubud Juwal"
-        gender = "Male"
         self.user = get_user_model().objects.create_user(
-            password=password,
-            name=name,
-            email=email,
-            gender=gender
+            name="Almaubud Juwal",
+            email="almabud37@gmail.com",
+            gender="Male",
+            nid=12345678901,
+            city='Dhaka',
+            country='Bangladesh',
+            dob='2020-03-02'
         )
 
     def test_user_listed(self):
