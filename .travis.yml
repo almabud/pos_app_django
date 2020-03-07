@@ -2,6 +2,6 @@ language: python
 python:
   - "3.6"
 before_script:
-    - "cd app"
+    - "cd pos"
 script:
   - "python manage.py test && flake8"
