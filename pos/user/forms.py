@@ -1,11 +1,8 @@
 from django import forms
-from django.contrib.admin import widgets
-from django.contrib.admin.widgets import AdminDateWidget
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.forms import TextInput, PasswordInput, ModelForm, NumberInput, DateInput, DateField
+from django.contrib.auth.forms import AuthenticationForm
+from django.forms import TextInput, PasswordInput, ModelForm, NumberInput, ImageField, FileInput, DateInput
 
 from core.models import User
-from django.utils.dateparse import parse_date
 
 
 class UserForm(forms.ModelForm):
@@ -28,11 +25,13 @@ class LoginForm(AuthenticationForm):
 
 
 class AddNewEmployeeForm(ModelForm):
-    dob = forms.DateField(input_formats=['%m-%d-%Y'],
-                          widget=forms.DateInput(
-                              attrs={'class': 'form-control', 'placeholder': 'DOB', 'id': 'datepicker',
-                                     'data-select': 'datepicker', 'readonly': True, 'required': True},
-                              format='%m-%d-%Y'), )
+    # dob = forms.DateField(input_formats=['%m-%d-%Y'],
+    #                       widget=forms.DateInput(
+    #                           attrs={'class': 'form-control', 'placeholder': 'DOB', 'id': 'datepicker',
+    #                                  'data-select': 'datepicker', 'readonly': True, 'required': True},
+    #                           format='%m-%d-%Y'), )
+    # profile_pic = forms.ImageField()
+    # dob = forms.DateField(input_formats=['%m-%d-%Y'])
 
     class Meta:
         model = User
@@ -54,3 +53,13 @@ class AddNewEmployeeForm(ModelForm):
         self.fields['nid'].required = True
         self.fields['email'].required = False
         self.fields['dob'].required = True
+        self.fields['dob'] = forms.DateField(input_formats=['%m-%d-%Y'])
+        self.fields['dob'] = forms.DateField(input_formats=['%m-%d-%Y'],
+                                             widget=forms.DateInput(
+                                                 attrs={'class': 'form-control', 'placeholder': 'DOB',
+                                                        'id': 'datepicker',
+                                                        'data-select': 'datepicker', 'readonly': True,
+                                                        'required': True},
+                                                 format='%m-%d-%Y'), )
+        self.fields['profile_pic'] = forms.ImageField(widget=FileInput(attrs={'id': 'img_input', 'hidden': True,
+                                                                              'accept': 'image/*'}))

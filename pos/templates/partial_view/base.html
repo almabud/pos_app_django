@@ -20,7 +20,10 @@
     <link href="{% static '/common/css/paper-dashboard.css' %}" rel="stylesheet"/>
     <link href="{% static '/common/css/jquery.datepicker2.css' %}" rel="stylesheet"/>
     <!-- CSS Just for demo purpose, don't include it in your project -->
-    <!--  <link href="{% static '/common/demo/demo.css' %}" rel="stylesheet" />-->
+    <!-- Data table -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.css">
+
+    <!--  <link href="{% static '/common/css/custom.css' %}" rel="stylesheet" />-->
 </head>
 
 <body class="">
@@ -44,6 +47,8 @@
 <!-- Paper Dashboard DEMO methods, don't include it in your project! -->
 <script src="{% static  '/common/demo/demo.js' %}"></script>
 <script src="{% static '/common/js/plugins/jquery.datepicker2.min.js' %}"></script>
+<!-- Data table -->
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.js"></script>
 {% block add_new_js %} {% endblock %}
 <script>
     $(document).ready(function () {

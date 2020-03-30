@@ -42,12 +42,11 @@ class LogoutView(RedirectView):
         return super().get_redirect_url(*args, **kwargs)
 
 
-class AddEmployeeView(FormView):
+class AddEmployeeView(FormView, LoginRequiredMixin):
     template_name = 'user/create_user.html'
     form_class = AddNewEmployeeForm
 
     def form_valid(self, form):
-        print('yest')
         extra_field = form.cleaned_data
         try:
             user = get_user_model().objects.create_user(**extra_field)

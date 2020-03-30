@@ -1,0 +1,10 @@
+.error_text {
+    color: red;
+}
+
+.error_border {
+    border: 1px solid #ff00008f;
+}
+.success_text{
+    color: green !important;
+}

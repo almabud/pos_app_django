@@ -66,6 +66,17 @@ function checkFieldError() {
     }
 }
 
+function profilePicPreview(input) {
+    var reader = new FileReader();
+    reader.onload = (element) => {
+         $('#img_preview').attr('src', element.target.result);
+    }
+    reader.readAsDataURL(input.files[0]);
+}
+
 $(document).ready(function () {
     checkFieldError();
+    $("#img_input").change(function () {
+        profilePicPreview(this);
+    });
 });

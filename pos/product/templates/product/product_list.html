@@ -1,0 +1,76 @@
+{% extends "partial_view/main.html" %}
+{% load static %}
+{% block content %}
+    <link href="{% static '/product/css/product.css' %}" rel="stylesheet"/>
+    <div class="row product_list">
+    <div class="col col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title text-center text-md-left"> All products </h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive product_list_table">
+                    <table class="table table-hover" id="product_list" data-page-length='100'>
+                        <thead class=" text-primary">
+                        <th>ID</th>
+                        <th>Product Name</th>
+                        <th>Category</th>
+                        <th>GSM</th>
+                        <th>Size</th>
+                        <th>Color</th>
+                        {#                        <th class="text-right">#}
+                        {#                            Price#}
+                        {#                        </th>#}
+                        <th class="text-right">Total Stock</th>
+                        </thead>
+                        <tbody>
+                        {% for product in product_list %}
+                            {% for variant in product.product_variant %}
+                                <tr>
+                                    <td>{{ variant.id }}</td>
+                                    <td>{{ product.product_name }}</td>
+                                    <td>{{ variant.category }}</td>
+                                    <td>{{ variant.gsm }}</td>
+                                    <td>{{ variant.size }}</td>
+                                    <td>{{ variant.color }}</td>
+                                    {#                                    <td class="text-right">{{ variant.bag_purchase_price + variant. }}</td>#}
+                                    <td class="text-right">{{ variant.stock_total }}</td>
+                                </tr>
+                            {% endfor %}
+                            <thead>
+                            <tr>
+                                <th colspan="7" class="text-center product_summery">Total {{ product.product_name }}
+                                    => {{ product.total_stock }}</th>
+                            </tr>
+                            </thead>
+
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {#            <table id="product_list" class="display">#}
+            {#                <thead>#}
+            {#                <tr>#}
+            {#                    <th>Product Name</th>#}
+            {#                    <th>Category</th>#}
+            {#                    <th>Total Stock</th>#}
+            {#                </tr>#}
+            {#                </thead>#}
+            {#                <tbody>#}
+            {#                {% for product in product_list %}#}
+            {#                    <tr>#}
+            {#                        <td>{{ product.product_name }}</td>#}
+            {#                        <td>{{ product.category_name }}</td>#}
+            {#                        <td>{{ product.total_stock }}</td>#}
+            {#                    </tr>#}
+            {#                {% endfor %}#}
+            {#                </tbody>#}
+            {#            </table>#}
+        </div>
+    </div>
+    {% block add_new_js %}
+        <script src="{% static  '/product/js/product.custom.js' %}"></script>
+    {% endblock %}
+{% endblock %}
+

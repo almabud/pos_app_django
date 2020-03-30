@@ -2,9 +2,8 @@
 {% load static  %}
 {% block content %}
 <link href="{% static '/user/css/add_new_employee.css' %}" rel="stylesheet"/>
-<form action="{% url 'user:add_employee' %}" method="POST">
+<form action="{% url 'user:add_employee' %}" method="POST" enctype="multipart/form-data">
     {% csrf_token %}
-    {{form.errors}}
     <div class="row">
         <div class="col-md-4">
             <div class="card card-user">
@@ -13,13 +12,14 @@
                 </div>
                 <div class="card-body">
                     <div class="author">
-                        <a href="#">
-                            <img class="avatar border-gray" src="{% static '/common/img/mike.jpg' %}" alt="...">
+                        <a>
+                            <img onclick="$('#img_input').click()" class="avatar border-gray" id="img_preview" src="{% static '/common/img/mike.jpg' %}" alt="...">
+                            {{ form.profile_pic }}
                             <h5 class="title" id="username"></h5>
                         </a>
-                        <p class="description">
-                            AL1000
-                        </p>
+{#                        <p class="description">#}
+{#                            AL1000#}
+{#                        </p>#}
                     </div>
                 </div>
             </div>

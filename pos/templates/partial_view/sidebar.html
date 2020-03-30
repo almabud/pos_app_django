@@ -39,14 +39,14 @@
               <p>Sold List</p>
             </a>
           </li>
-          <li>
-            <a href="./notifications.html">
+          <li class="{% active request 'product:product_list' 'active' %}">
+            <a href="{% url 'product:product_list' %}">
               <i class="nc-icon nc-single-copy-04"></i>
               <p>All products list</p>
             </a>
           </li>
-          <li>
-            <a href="{% url 'dashboard:dashboard' %}">
+          <li class="{% active request 'product:new_product' 'active' %}">
+            <a href="{% url 'product:new_product' %}">
               <i class="nc-icon nc-simple-add"></i>
               <p>Add new product</p>
             </a>
@@ -57,7 +57,7 @@
               <p>Employee List</p>
             </a>
           </li>
-          <li {% active request 'dashboard:dashboard' 'active' %}>
+          <li class="{% active request 'user:add_employee' 'active' %}">
             <a href="{% url 'user:add_employee' %}">
               <i class="nc-icon nc-circle-10"></i>
               <p>Add New Employee</p>

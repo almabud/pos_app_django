@@ -23,7 +23,7 @@ class UserManager(BaseUserManager):
         try:
             user.save(using=self._db)
         except IntegrityError as e:
-            raise ValueError("Testcase {}".format(e))
+            raise ValueError(e)
             # raise ValueError("Email has already been used")
         return user
 

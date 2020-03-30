@@ -3,6 +3,7 @@ from django.contrib.admin import widgets
 from django.contrib.admin.widgets import AdminDateWidget
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django import forms
 from django.utils.translation import gettext as _
 
 from core import models
@@ -21,7 +22,7 @@ class UserAdmin(BaseUserAdmin, admin.ModelAdmin):
     list_display = ['code', 'name']
     fieldsets = (
         (None, {"fields": ['code', 'password']}),
-        (_('Personal Info'), {"fields": ['name', 'email', 'nid', 'gender', 'dob', 'city', 'country', 'address']}),
+        (_('Personal Info'), {"fields": ['profile_pic', 'name', 'email', 'nid', 'gender', 'dob', 'city', 'country', 'address']}),
         (_('Permission'),
          {"fields": ['is_active', 'is_staff', 'is_superuser', 'is_admin']}),
         (_('Important Dates'), {"fields": ['last_login']})
@@ -34,9 +35,13 @@ class UserAdmin(BaseUserAdmin, admin.ModelAdmin):
         }),
     )
     readonly_fields = ['code']
-    '''Over riding the specific form field.'''
+
     def formfield_for_dbfield(self, db_field, **kwargs):
+        """Over riding the specific form field."""
+        print(db_field)
         if db_field.name == 'dob':
+            kwargs['widget'] = widgets.AdminDateWidget()
+        if db_field.name == 'profile_pic':
             kwargs['widget'] = widgets.AdminDateWidget()
         return super(UserAdmin, self).formfield_for_dbfield(db_field, **kwargs)
 

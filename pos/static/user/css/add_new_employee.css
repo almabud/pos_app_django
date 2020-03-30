@@ -36,5 +36,8 @@ input[type=number] {
     background: white;
     cursor: pointer;
 }
+.avatar{
+    cursor: pointer !important;
+}
 
 /*# sourceMappingURL=add_new_employee.css.map */

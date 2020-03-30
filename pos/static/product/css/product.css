@@ -1,0 +1,13 @@
+.product_list{
+    height: 100vh !important;
+}
+.product_list_table{
+    overflow-y: hidden;
+    overflow-x: scroll;
+}
+.product_summery{
+    border: none !important;
+    background: rgba(3, 27, 225, 0.72) !important;
+    color: white;
+    text-transform: none !important;
+}
