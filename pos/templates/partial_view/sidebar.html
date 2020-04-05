@@ -7,16 +7,15 @@
         Tip 1: You can change the color of the sidebar using: data-color="blue | green | orange | red | yellow"
     -->
       <div class="logo">
-        <a href="http://www.creative-tim.com" class="simple-text logo-mini">
+        <!--<a href="http://www.creative-tim.com" class="simple-text logo-mini">
           <div class="logo-image-small">
-            <img src="{% static '/common/img/logo-small.png' %}">
+            <img src="{% static '/site_image/logo.jpg' %}">
           </div>
-        </a>
+        </a>-->
         <a href="http://www.creative-tim.com" class="simple-text logo-normal">
-          Creative Tim
-          <!-- <div class="logo-image-big">
-            <img src="{% static '/common/img/logo-big.png' %}">
-          </div> -->
+          <div class="logo-image-big text-center">
+            <img style="height: 100px;" src="{% static '/site_image/logo.jpg' %}">
+          </div>
         </a>
       </div>
       <div class="sidebar-wrapper">
@@ -63,10 +62,16 @@
               <p>Add New Employee</p>
             </a>
           </li>
-          <li class="active-pro">
-            <a href="./upgrade.html">
-              <i class="nc-icon nc-spaceship"></i>
-              <p>Upgrade to PRO</p>
+          <li class="{% active request 'product:supplier_list' 'active' %}">
+            <a href="{% url 'product:supplier_list' %}">
+              <i class="nc-icon nc-badge"></i>
+              <p>Supplier List</p>
+            </a>
+          </li>
+          <li class="{% active request 'product:new_supplier' 'active' %}">
+            <a href="{% url 'product:new_supplier' %}">
+              <i class="nc-icon nc-circle-10"></i>
+              <p>Add New Supplier</p>
             </a>
           </li>
         </ul>

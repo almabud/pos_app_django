@@ -1,9 +1,10 @@
 from django import forms
+from django.forms import ModelForm, TextInput, NumberInput, Textarea
 
-from product.models import Category, Size, Color, Product
+from product.models import Category, Size, Color, Product, Supplier
 
 
-class AddNewProduct(forms.Form):
+class AddNewProductForm(forms.Form):
     GSM_CHOICES = [
         ('25', 25),
         ('30', 30),
@@ -17,7 +18,7 @@ class AddNewProduct(forms.Form):
         ('110', 110)
     ]
     product = forms.ModelChoiceField(required=False, queryset=Product.objects.all(),
-                                          widget=forms.Select(attrs={'class': 'form-control', 'id': 'product_select'}))
+                                     widget=forms.Select(attrs={'class': 'form-control', 'id': 'product_select'}))
     new_product_name = forms.CharField(required=False,
                                        widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'product_input',
                                                                      'placeholder': 'Enter Product Name eg. Handle Bag'}))
@@ -44,11 +45,11 @@ class AddNewProduct(forms.Form):
                                 widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'color_input',
                                                               'placeholder': 'Enter Color eg. Red'}))
     stock_total = forms.IntegerField(widget=forms.NumberInput(attrs={'class': 'form-control'}))
+    supplier = forms.ModelChoiceField(required=True, queryset=Supplier.objects.all(),
+                                      widget=forms.Select(attrs={'class': 'form-control', 'id': 'supplier_select'}))
 
     def clean(self):
         """If need more validation than default form validation. Then extend this method."""
-        print("cleaned")
-        print(self.cleaned_data)
         if 'new_product_name' in self.cleaned_data and self.cleaned_data['new_product_name']:
             print(self.cleaned_data['new_product_name'])
             if Product.objects.filter(product_name__iexact=self.cleaned_data['new_product_name']).exists():
@@ -103,4 +104,30 @@ class AddNewProduct(forms.Form):
                 raise forms.ValidationError('Size field can\'t be empty')
             del self.cleaned_data['new_size']
 
+        return self.cleaned_data
+
+
+class AddNewSupplierForm(ModelForm):
+    class Meta:
+        model = Supplier
+        fields = ['name', 'mobile_no', 'address']
+        widgets = {
+            'name': TextInput(attrs={'class': 'form-control', 'id': 'fullname', 'placeholder': 'Supplier Name',
+                                     'oninput': 'showName()', 'autofocus': True, 'required': True}),
+            'mobile_no': NumberInput(attrs={'class': 'form-control', 'type': 'number', 'placeholder': 'Mobile No',
+                                            'required': True}),
+            'address': Textarea(attrs={'class': 'form-control', 'placeholder': 'Address', 'required': True, }),
+        }
+
+    def clean(self):
+        """If need more validation than default form validation. Then extend this method."""
+
+        if 'mobile_no' in self.cleaned_data and self.cleaned_data['mobile_no']:
+            if Supplier.objects.filter(mobile_no=self.cleaned_data['mobile_no']).exists():
+                self.add_error('mobile_no', 'This mobile no is already exist.')
+                raise forms.ValidationError('This mobile no is already exist.')
+        else:
+            if 'mobile_no' not in self.cleaned_data or not self.cleaned_data['mobile_no']:
+                self.add_error('mobile_no', 'This field can\'t be empty')
+                raise forms.ValidationError('Mobile no field can\'t be empty')
         return self.cleaned_data

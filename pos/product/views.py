@@ -13,8 +13,8 @@ from django.views import View
 # from product.models import ProductTransaction
 from django.views.generic import FormView
 
-from product.forms import AddNewProduct
-from product.models import Product, Color, Size, Category
+from product.forms import AddNewProductForm, AddNewSupplierForm
+from product.models import Product, Color, Size, Category, Supplier, SupplierTransaction, ProductVariant
 
 
 class ProductList(View):
@@ -23,14 +23,30 @@ class ProductList(View):
         # return HttpResponse(all_products[0].quantity)
 
 
-class AddNewProduct(FormView, forms.Form):
+class AddNewProduct(FormView):
     template_name = 'product/create_product.html'
-    form_class = AddNewProduct
+    form_class = AddNewProductForm
 
     def form_valid(self, form):
         clean_form = form.cleaned_data
         Product.objects.create_product(**clean_form)
         return redirect('product:product_list')
+
+
+class SupplierList(View):
+    def get(self, request):
+        return render(request, 'product/supplier_list.html', {"supplier_list": Supplier.objects.get_all_supplier()})
+        # return HttpResponse(all_products[0].quantity)
+
+
+class AddNewSupplier(FormView):
+    template_name = 'product/create_supplier.html'
+    form_class = AddNewSupplierForm
+
+    def form_valid(self, form):
+        # clean_form = form.cleaned_data
+        supplier = form.save()
+        return redirect('product:supplier_list')
 
 
 class AddNewSize(View):

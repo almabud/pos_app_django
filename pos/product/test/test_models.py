@@ -1,28 +1,27 @@
 from django.test import TestCase
 
-from product.models import Category, Size, Color, Product, ProductTransaction
+from product.models import Category, Size, Color, Product, ProductVariant
 
 
 class ModelTests(TestCase):
     def setUp(self):
-        self.cat = Category.objects.create(category='D-Cut')
-        self.size = Size.objects.create(size='12/14')
-        self.color = Color.objects.create(color='Red')
+        self.cat = Category.objects.create(category='L-Cut')
+        self.size = Size.objects.create(size='11/14')
+        self.color = Color.objects.create(color='Brown')
         self.product = Product.objects.create(
             product_name="ABC Bag",
+        )
+        self.product_variant = ProductVariant.objects.create(
             gsm=25,
             bag_purchase_price=5.80,
             marketing_cost=0.40,
             vat=0.40,
             profit=1,
             transport_cost=0.20,
-            category=self.cat
-        )
-        self.product_transaction = ProductTransaction.objects.create(
-            size=self.size,
+            category=self.cat,
             color=self.color,
-            product=self.product,
-            total_product=30
+            size=self.size,
+            product=self.product
         )
 
     def test_add_new_category(self):
@@ -56,7 +55,3 @@ class ModelTests(TestCase):
     def test_create_new_product(self):
         """Check if creating new product is working or not"""
         self.assertEqual(self.product.product_name, "ABC Bag")
-
-    def test_create_product_transaction(self):
-        """Check product transaction table"""
-        self.assertEqual(self.product_transaction.product.product_name, self.product.product_name)

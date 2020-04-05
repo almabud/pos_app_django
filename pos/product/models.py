@@ -1,7 +1,10 @@
 from django.db import models
 
 # Create your models here.
-from product.manager import ColorManager, ProductManager
+from django.utils.timezone import now
+
+from core.models import User
+from product.manager import ColorManager, ProductManager, SupplierTransactionManager, SupplierManager
 
 
 class Size(models.Model):
@@ -60,10 +63,10 @@ class ProductVariant(models.Model):
     profit = models.FloatField(default=0.0)
     transport_cost = models.FloatField(default=0.0)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    color = models.ForeignKey('Color', related_name='product_color', on_delete=models.CASCADE)
-    size = models.ForeignKey('Size', related_name='product_size', on_delete=models.CASCADE)
+    color = models.ForeignKey(Color, related_name='product_color', on_delete=models.CASCADE)
+    size = models.ForeignKey(Size, related_name='product_size', on_delete=models.CASCADE)
     stock_total = models.IntegerField(default=0)
-    product = models.ForeignKey('Product', related_name='variant', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, related_name='variant', on_delete=models.CASCADE)
 
     class Meta:
         unique_together = ('color', 'size', 'product', 'gsm', 'category')
@@ -71,30 +74,53 @@ class ProductVariant(models.Model):
     def __str__(self):
         return self.product.product_name
 
-# class ProductTransaction(models.Model):
-#     """This model define product specific detail like size color and the quantity"""
-#     size = models.ForeignKey(Size, on_delete=models.CASCADE)
-#     color = models.ForeignKey(Color, on_delete=models.CASCADE)
-#     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-#     total_product = models.IntegerField()
-#     objects = ProductTransactionManager()
-#
-#     def __str__(self):
-#         return self.product.product_name
+
+class Supplier(models.Model):
+    """This model define the supplier details"""
+    name = models.CharField(max_length=100)
+    mobile_no = models.CharField(unique=True, max_length=16)
+    address = models.TextField()
+
+    def __str__(self):
+        return self.name
+    objects = SupplierManager()
 
 
-# class Supplier(models.Model):
-#     """This model define the supplier details"""
-#     name = models.CharField(max_length=100)
-#     mobile_no = models.IntegerField()
-#     address = models.TextField(blank=True, null=True)
-#
-#
-# class SupplerTransaction(models.Model):
-#     """This model define the supplier specific  details"""
-#     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
-#     size = models.ForeignKey(Size, on_delete=models.CASCADE)
-#     color = models.ForeignKey(Color, on_delete=models.CASCADE)
-#     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-#     supplies = models.IntegerField()
-#     date = models.DateTimeField(auto_now_add=True)
+class SupplierTransaction(models.Model):
+    """This model define the supplier specific  details"""
+    supplier = models.ForeignKey(Supplier, related_name='product_supplier', on_delete=models.CASCADE)
+    date = models.DateTimeField(default=now)
+    total_supplied = models.IntegerField()
+    product = models.ForeignKey(ProductVariant, related_name='product_variant', on_delete=models.CASCADE)
+
+    objects = SupplierTransactionManager()
+
+    def __str__(self):
+        return self.supplier.name
+
+
+class Customer(models.Model):
+    """This model store data about customer"""
+    customer_name = models.CharField(max_length=100)
+    customer_phone = models.CharField(unique=True, max_length=16)
+    customer_address = models.TextField(max_length=200, null=True)
+    quantity = models.IntegerField()
+
+
+class Order(models.Model):
+    """This model store data about order"""
+    customer = models.ForeignKey(Customer, null=True, blank=True, on_delete=models.SET_NULL)
+    sold_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    ordered_date = models.DateField(default=now)
+    is_paid = models.BooleanField(default=False)
+    paid_date = models.DateTimeField(null=True)
+
+
+class OrderedItem(models.Model):
+    """This model store products of a particular order """
+    product = models.ForeignKey(ProductVariant, null=True, blank=True, on_delete=models.SET_NULL)
+    price_per_product = models.FloatField(default=0.0)
+    discount_percent = models.IntegerField(default=0)
+    quantity = models.IntegerField(default=0)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+

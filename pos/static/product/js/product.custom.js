@@ -22,35 +22,35 @@ function initSize() {
     });
 }
 
-function saveSize(csrftoken, url) {
-    var size = $('#size_input').val();
-    if (size != '') {
-        $.ajax({
-            headers: {
-                "X-CSRFTOKEN": csrftoken
-            },
-            url: url,
-            method: 'POST',
-            data: {
-                'size': size
-            },
-            dataType: 'json',
-            success: function (response) {
-                var size = response.size;
-                $('#size_select').append(`<option value="${size.id}">${size.size}</option>`);
-                initSize();
-                $('#size_success_text').text('Size added successfully');
-                $('#size_error_text').text('');
-            },
-            error: function (response) {
-                var error = response["responseJSON"]["error"];
-                $('#size_error_text').text(error);
-                $('#size_success_text').text('');
-            }
-        });
-    }
-
-}
+// function saveSize(csrftoken, url) {
+//     var size = $('#size_input').val();
+//     if (size != '') {
+//         $.ajax({
+//             headers: {
+//                 "X-CSRFTOKEN": csrftoken
+//             },
+//             url: url,
+//             method: 'POST',
+//             data: {
+//                 'size': size
+//             },
+//             dataType: 'json',
+//             success: function (response) {
+//                 var size = response.size;
+//                 $('#size_select').append(`<option value="${size.id}">${size.size}</option>`);
+//                 initSize();
+//                 $('#size_success_text').text('Size added successfully');
+//                 $('#size_error_text').text('');
+//             },
+//             error: function (response) {
+//                 var error = response["responseJSON"]["error"];
+//                 $('#size_error_text').text(error);
+//                 $('#size_success_text').text('');
+//             }
+//         });
+//     }
+//
+// }
 
 function initColor() {
     $('#color_error_text').text('');
@@ -76,35 +76,6 @@ function initColor() {
     });
 }
 
-function saveColor(csrftoken, url) {
-    var color = $('#color_input').val();
-    if (color != '') {
-        $.ajax({
-            headers: {
-                "X-CSRFTOKEN": csrftoken
-            },
-            url: url,
-            method: 'POST',
-            data: {
-                'color': color
-            },
-            dataType: 'json',
-            success: function (response) {
-                var color = response.color;
-                $('#color_select').append(`<option value="${color.id}">${color.color}</option>`);
-                initColor();
-                $('#color_success_text').text('Color added successfully');
-                $('#color_error_text').text('');
-            },
-            error: function (response) {
-                var error = response["responseJSON"]["error"];
-                $('#color_error_text').text(error);
-                $('#color_success_text').text('');
-            }
-        });
-    }
-}
-
 function initCategory() {
     $('#category_error_text').text('');
     $('#category_input').val('');
@@ -127,35 +98,6 @@ function initCategory() {
     $('#cancel_category').click(() => {
         initCategory();
     });
-}
-
-function saveCategory(csrftoken, url) {
-    var category = $('#category_input').val();
-    if (category != '') {
-        $.ajax({
-            headers: {
-                "X-CSRFTOKEN": csrftoken
-            },
-            url: url,
-            method: 'POST',
-            data: {
-                'category': category
-            },
-            dataType: 'json',
-            success: function (response) {
-                var category = response.category;
-                $('#category_select').append(`<option value="${category.id}">${category.category}</option>`);
-                initCategory();
-                $('#category_success_text').text('Category added successfully');
-                $('#category_error_text').text('');
-            },
-            error: function (response) {
-                var error = response["responseJSON"]["error"];
-                $('#category_error_text').text(error);
-                $('#category_success_text').text('');
-            }
-        });
-    }
 }
 
 function initProduct() {
@@ -185,6 +127,37 @@ function initProduct() {
     });
 }
 
+function checkFieldError() {
+    if ($('#name_error').length) {
+        var nameError = JSON.parse($('#name_error').text());
+        $('#name_error_text').text(nameError);
+        $('#id_name').addClass('error_border');
+
+    } else {
+        nameError = '';
+        $('#id_name').removeClass('error_border');
+    }
+
+    if ($('#mobile_no_error').length) {
+        var mobileError = JSON.parse($('#mobile_no_error').text());
+        $('#mobile_no_error_text').text(mobileError);
+        $('#id_mobile_no').addClass('error_border');
+    } else {
+        mobileError = '';
+        $('#mobileError').removeClass('error_border');
+    }
+
+    if ($('#address_error').length) {
+        var addressError = JSON.parse($('#address_error').text());
+        $('#address_error_text').text(addressError);
+        $('#id_address').addClass('error_border');
+    } else {
+        addressError = '';
+        $('#id_address').removeClass('error_border');
+
+    }
+}
+
 $(document).ready(function () {
     window.staticUrl = "{{ STATIC_URL }}"
     $('#product_list').DataTable({
@@ -202,6 +175,6 @@ $(document).ready(function () {
     initColor();
     initCategory();
     initProduct();
-
+    checkFieldError();
 
 });

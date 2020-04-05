@@ -1,0 +1,41 @@
+{% extends "partial_view/main.html" %}
+{% load static %}
+{% block content %}
+    <link href="{% static '/product/css/product.css' %}" rel="stylesheet"/>
+    <div class="row product_list">
+    <div class="col col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title text-center text-md-left"> All products </h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive product_list_table">
+                    <table class="table table-hover" id="product_list" data-page-length='100'>
+                        <thead class=" text-primary">
+                        <th>ID</th>
+                        <th>Supplier Name</th>
+                        <th>Mobile No</th>
+                        <th>Address</th>
+                        <th>Total Supplied</th>
+                        </thead>
+                        <tbody>
+                        {% for supplier in supplier_list %}
+                            <tr>
+                                <td>{{ supplier.id }}</td>
+                                <td>{{ supplier.name }}</td>
+                                <td>{{ supplier.mobile_no }}</td>
+                                <td>{{ supplier.address }}</td>
+                                <td>{{ supplier.total_supplied }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% block add_new_js %}
+        <script src="{% static  '/product/js/product.custom.js' %}"></script>
+    {% endblock %}
+{% endblock %}
+
