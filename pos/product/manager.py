@@ -1,6 +1,8 @@
+from decimal import *
+
 from django.core.exceptions import ValidationError
 from django.db import models, DatabaseError, transaction
-from django.db.models import Sum, Prefetch, F
+from django.db.models import Sum, Prefetch, F, When, Q, Value, Case, FloatField
 
 
 class ColorManager(models.Manager):
@@ -114,4 +116,40 @@ class SupplierTransactionManager(models.Manager):
     def get_all_supplier(self):
         data = self.model.objects.all()
         print(data)
+        return data
+
+
+class CustomerManger(models.Manager):
+    def get_all_customer(self):
+        data = self.model.objects.all().prefetch_related('order_customer', 'order_customer__ordered_item_order') \
+            .annotate(total_item=Sum('order_customer__ordered_item_order__quantity'),
+                      total_due=Case(
+                          When(order_customer__is_paid=False,
+                               then=Sum((F('order_customer__ordered_item_order__quantity')
+                                         * F('order_customer__ordered_item_order__price_per_product'))
+                                        * (Value(1) - (
+                                       F('order_customer__ordered_item_order__discount_percent') / 100.00))
+                                        ) - F('order_customer__paid_total')),
+                          default=Value(0),
+                          output_field=FloatField()
+                      ))
+        return data
+
+
+class OrderedManager(models.Manager):
+    def get_all_order(self):
+        data = self.model.objects.all().prefetch_related('ordered_item_order').select_related('customer', 'sold_by') \
+            .annotate(total_item=Sum('ordered_item_order__quantity'),
+                      total_billed=Sum(
+                          (F('ordered_item_order__quantity') * F('ordered_item_order__price_per_product'))
+                          * (Value(1) - (F('ordered_item_order__discount_percent') / 100.00)), output_field=FloatField()),
+                      total_due=Case(
+                          When(is_paid=False,
+                               then=Sum((F('ordered_item_order__quantity')
+                                         * F('ordered_item_order__price_per_product'))
+                                        * (Value(1) - (F('ordered_item_order__discount_percent') / 100.00))
+                                        ) - F('paid_total')),
+                          default=Value(0),
+                          output_field=FloatField()
+                      ))
         return data

@@ -1,11 +1,10 @@
 from django.contrib import admin
 from product import models
 # from product.models import Quantity
-from product.models import ProductVariant
 
 
 class ProductVariantAdmin(admin.StackedInline):
-    model = ProductVariant
+    model = models.ProductVariant
     extra = 1
 
 
@@ -14,16 +13,28 @@ class ProductAdmin(admin.ModelAdmin):
     inlines = (ProductVariantAdmin,)
 
 
-# class SupplierTransactionAdmin(admin.ModelAdmin):
-#     field_set = ['supplier', 'product', 'date']
+class SupplierTransactionAdmin(admin.TabularInline):
+    model = models.SupplierTransaction
+    extra = 1
+
+
+class SupplierAdmin(admin.ModelAdmin):
+    inlines = (SupplierTransactionAdmin,)
+
+
+class OrderedItemAdmin(admin.TabularInline):
+    model = models.OrderedItem
+    extra = 1
+
+
+class OrderedAdmin(admin.ModelAdmin):
+    inlines = (OrderedItemAdmin,)
 
 
 admin.site.register(models.Size)
 admin.site.register(models.Color)
 admin.site.register(models.Category)
 admin.site.register(models.Product, ProductAdmin)
-admin.site.register(models.ProductVariant)
-admin.site.register(models.Supplier)
-admin.site.register(models.SupplierTransaction)
-# admin.site.register(models.Quantity)
-# admin.site.register(models.ProductTransaction)
+admin.site.register(models.Supplier, SupplierAdmin)
+admin.site.register(models.Customer)
+admin.site.register(models.Order, OrderedAdmin)

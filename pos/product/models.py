@@ -4,7 +4,8 @@ from django.db import models
 from django.utils.timezone import now
 
 from core.models import User
-from product.manager import ColorManager, ProductManager, SupplierTransactionManager, SupplierManager
+from product.manager import ColorManager, ProductManager, SupplierTransactionManager, SupplierManager, CustomerManger, \
+    OrderedManager
 
 
 class Size(models.Model):
@@ -60,6 +61,7 @@ class ProductVariant(models.Model):
     bag_purchase_price = models.FloatField(default=0.0)
     marketing_cost = models.FloatField(default=0.0)
     vat = models.FloatField(default=0.0)
+    discount_percent = models.IntegerField(default=0)
     profit = models.FloatField(default=0.0)
     transport_cost = models.FloatField(default=0.0)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
@@ -104,16 +106,26 @@ class Customer(models.Model):
     customer_name = models.CharField(max_length=100)
     customer_phone = models.CharField(unique=True, max_length=16)
     customer_address = models.TextField(max_length=200, null=True)
-    quantity = models.IntegerField()
+
+    objects = CustomerManger()
+
+    def __str__(self):
+        return self.customer_name
 
 
 class Order(models.Model):
     """This model store data about order"""
-    customer = models.ForeignKey(Customer, null=True, blank=True, on_delete=models.SET_NULL)
+    customer = models.ForeignKey(Customer, related_name='order_customer', null=True, blank=True, on_delete=models.SET_NULL)
     sold_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
     ordered_date = models.DateField(default=now)
     is_paid = models.BooleanField(default=False)
+    paid_total = models.FloatField(default=0)
     paid_date = models.DateTimeField(null=True)
+
+    objects = OrderedManager()
+
+    def __str__(self):
+        return self.customer.customer_name
 
 
 class OrderedItem(models.Model):
@@ -122,5 +134,8 @@ class OrderedItem(models.Model):
     price_per_product = models.FloatField(default=0.0)
     discount_percent = models.IntegerField(default=0)
     quantity = models.IntegerField(default=0)
-    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, related_name='ordered_item_order', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.product.product.product_name
 

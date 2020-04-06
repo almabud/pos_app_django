@@ -14,7 +14,8 @@ from django.views import View
 from django.views.generic import FormView
 
 from product.forms import AddNewProductForm, AddNewSupplierForm
-from product.models import Product, Color, Size, Category, Supplier, SupplierTransaction, ProductVariant
+from product.models import Product, Color, Size, Category, Supplier, SupplierTransaction, ProductVariant, Customer, \
+    Order
 
 
 class ProductList(View):
@@ -49,28 +50,11 @@ class AddNewSupplier(FormView):
         return redirect('product:supplier_list')
 
 
-class AddNewSize(View):
-    def post(self, request):
-        try:
-            new_size = Size.objects.create(size=request.POST.get('size'))
-        except IntegrityError:
-            return JsonResponse({'error': 'The value is already exist.'}, status=400)
-        return JsonResponse({'size': {'size': new_size.size, 'id': new_size.pk}}, status=201)
+class CustomerList(View):
+    def get(self, request):
+        return render(request, 'product/customer_list.html', {"customer_list": Customer.objects.get_all_customer()})
 
 
-class AddNewColor(View):
-    def post(self, request):
-        try:
-            new_color = Color.objects.create(color=request.POST.get('color'))
-        except IntegrityError:
-            return JsonResponse({'error': 'The value is already exist.'}, status=400)
-        return JsonResponse({'color': {'color': new_color.color, 'id': new_color.pk}}, status=201)
-
-
-class AddNewCategory(View):
-    def post(self, request):
-        try:
-            new_category = Category.objects.create(category=request.POST.get('category'))
-        except IntegrityError:
-            return JsonResponse({'error': 'The value is already exist.'}, status=400)
-        return JsonResponse({'category': {'category': new_category.category, 'id': new_category.pk}}, status=201)
+class OrderList(View):
+    def get(self, request):
+        return render(request, 'product/order_list.html', {"order_list": Order.objects.get_all_order()})

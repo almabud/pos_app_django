@@ -32,8 +32,8 @@
               <p>Create Invoice</p>
             </a>
           </li>
-          <li>
-            <a href="./map.html">
+          <li class="{% active request 'product:order_list' 'active' %}">
+            <a href="{% url 'product:order_list' %}">
               <i class="nc-icon nc-paper"></i>
               <p>Sold List</p>
             </a>
@@ -72,6 +72,12 @@
             <a href="{% url 'product:new_supplier' %}">
               <i class="nc-icon nc-circle-10"></i>
               <p>Add New Supplier</p>
+            </a>
+          </li>
+          <li class="{% active request 'product:customer_list' 'active' %}">
+            <a href="{% url 'product:customer_list' %}">
+              <i class="nc-icon nc-badge"></i>
+              <p>Customer List</p>
             </a>
           </li>
         </ul>

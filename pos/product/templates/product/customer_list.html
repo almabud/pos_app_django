@@ -6,26 +6,28 @@
     <div class="col col-md-12">
         <div class="card">
             <div class="card-header">
-                <h4 class="card-title text-center text-md-left"> All Suppliers </h4>
+                <h4 class="card-title text-center text-md-left"> All Customers </h4>
             </div>
             <div class="card-body">
                 <div class="table-responsive product_list_table">
                     <table class="table table-hover" id="product_list" data-page-length='100'>
                         <thead class=" text-primary">
                         <th>ID</th>
-                        <th>Supplier Name</th>
+                        <th>Customer Name</th>
                         <th>Mobile No</th>
                         <th>Address</th>
-                        <th>Total Supplied</th>
+                        <th>Total item</th>
+                        <th class="text-right">Total Due(BDT)</th>
                         </thead>
                         <tbody>
-                        {% for supplier in supplier_list %}
+                        {% for customer in customer_list %}
                             <tr>
-                                <td>{{ supplier.id }}</td>
-                                <td>{{ supplier.name }}</td>
-                                <td>{{ supplier.mobile_no }}</td>
-                                <td>{{ supplier.address }}</td>
-                                <td>{{ supplier.total_supplied }}</td>
+                                <td>{{ customer.id }}</td>
+                                <td>{{ customer.customer_name }}</td>
+                                <td>{{ customer.customer_phone }}</td>
+                                <td>{{ customer.customer_address }}</td>
+                                <td>{{ customer.total_item }}</td>
+                                <td class="text-right">{{ customer.total_due|floatformat:3 }}</td>
                             </tr>
                         {% endfor %}
                         </tbody>
