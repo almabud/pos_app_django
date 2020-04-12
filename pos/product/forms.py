@@ -1,7 +1,7 @@
 from django import forms
-from django.forms import ModelForm, TextInput, NumberInput, Textarea
+from django.forms import ModelForm, TextInput, NumberInput, Textarea, BaseFormSet
 
-from product.models import Category, Size, Color, Product, Supplier
+from product.models import Category, Size, Color, Product, Supplier, Order, Customer
 
 
 class AddNewProductForm(forms.Form):
@@ -26,9 +26,12 @@ class AddNewProductForm(forms.Form):
     product_description = forms.CharField(required=False, widget=forms.Textarea(attrs={'class': 'form-control'}))
     bag_purchase_price = forms.DecimalField(widget=forms.NumberInput(attrs={'class': 'form-control'}))
     marketing_cost = forms.DecimalField(widget=forms.NumberInput(attrs={'class': 'form-control'}))
+    transport_cost = forms.DecimalField(widget=forms.NumberInput(attrs={'class': 'form-control'}))
+    printing_cost = forms.DecimalField(widget=forms.NumberInput(attrs={'class': 'form-control'}))
     vat = forms.DecimalField(widget=forms.NumberInput(attrs={'class': 'form-control'}))
     profit = forms.DecimalField(widget=forms.NumberInput(attrs={'class': 'form-control'}))
-    transport_cost = forms.DecimalField(widget=forms.NumberInput(attrs={'class': 'form-control'}))
+    discount_percent = forms.IntegerField(widget=forms.NumberInput(attrs={'class': 'form-control'}))
+    discount_min_purchase = forms.IntegerField(widget=forms.NumberInput(attrs={'class': 'form-control'}))
     category = forms.ModelChoiceField(required=False, queryset=Category.objects.all(),
                                       widget=forms.Select(attrs={'class': 'form-control', 'id': 'category_select'}))
     new_category = forms.CharField(required=False,
@@ -64,7 +67,7 @@ class AddNewProductForm(forms.Form):
             del self.cleaned_data['product_description']
         else:
             if 'product' not in self.cleaned_data or not self.cleaned_data['product']:
-                self.add_error('product', 'This field can\'t be empty')
+                # self.add_error('product', 'This field can\'t be empty')
                 raise forms.ValidationError('Product Name can\'t be empty')
             del self.cleaned_data['product_description']
             del self.cleaned_data['new_product_name']
@@ -77,7 +80,7 @@ class AddNewProductForm(forms.Form):
 
         else:
             if 'category' not in self.cleaned_data or not self.cleaned_data['category']:
-                self.add_error('category', 'This field can\'t be empty')
+                # self.add_error('category', 'This field can\'t be empty')
                 raise forms.ValidationError('Category field can\'t be empty')
             del self.cleaned_data['new_category']
 
@@ -88,7 +91,7 @@ class AddNewProductForm(forms.Form):
             del self.cleaned_data['color']
         else:
             if 'color' not in self.cleaned_data or not self.cleaned_data['color']:
-                self.add_error('color', 'This field can\'t be empty')
+                # self.add_error('color', 'This field can\'t be empty')
                 raise forms.ValidationError('Color field can\'t be empty')
             del self.cleaned_data['new_color']
 
@@ -100,7 +103,7 @@ class AddNewProductForm(forms.Form):
             del self.cleaned_data['size']
         else:
             if 'size' not in self.cleaned_data and not self.cleaned_data['size']:
-                self.add_error('size', 'This field can\'t be empty')
+                # self.add_error('size', 'This field can\'t be empty')
                 raise forms.ValidationError('Size field can\'t be empty')
             del self.cleaned_data['new_size']
 
@@ -128,6 +131,30 @@ class AddNewSupplierForm(ModelForm):
                 raise forms.ValidationError('This mobile no is already exist.')
         else:
             if 'mobile_no' not in self.cleaned_data or not self.cleaned_data['mobile_no']:
-                self.add_error('mobile_no', 'This field can\'t be empty')
+                # self.add_error('mobile_no', 'This field can\'t be empty')
                 raise forms.ValidationError('Mobile no field can\'t be empty')
         return self.cleaned_data
+
+
+class OrderForm(forms.Form):
+    customer = forms.ModelChoiceField(queryset=Customer.objects.all(),
+                                      widget=forms.Select(attrs={'class': 'form-control', 'id': 'customer_select'}))
+    paid_total = forms.FloatField(widget=forms.NumberInput(attrs={'class': 'form-control', 'min': 0,
+                                                                  'id': 'paid_total_field', 'step': '.001', 'disabled': True}))
+
+
+class ItemForm(forms.Form):
+    product = forms.IntegerField(required=True, widget=forms.NumberInput(attrs={'class': 'form-control invoice_readonly_field',
+                                                                 'min': 0, 'readonly': True, 'hidden': True}))
+    price_per_product = forms.FloatField(required=True, widget=forms.NumberInput(attrs={'class': 'form-control invoice_readonly_field',
+                                                                         'min': 0, 'readonly': True, 'hidden': True}))
+    discount_percent = forms.IntegerField(required=True, widget=forms.NumberInput(attrs={'class': 'form-control invoice_readonly_field',
+                                                                          'min': 0, 'readonly': True, 'hidden': True}))
+    quantity = forms.IntegerField(required=True,  widget=forms.NumberInput(attrs={'class': 'form-control invoice_field quantity_field', 'min': 1}))
+
+
+class BaseItemFormSet(BaseFormSet):
+    def clean(self):
+        super(BaseItemFormSet, self).clean()
+        if not self.forms:
+            raise forms.ValidationError("Please select at least 1 item")

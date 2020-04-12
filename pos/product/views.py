@@ -1,9 +1,4 @@
-import json
-
-from django.core import serializers
-from django.db import IntegrityError
-from django.db.models import Prefetch, Sum
-from django import forms
+from django.forms import formset_factory
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect
 
@@ -11,11 +6,10 @@ from django.shortcuts import render, redirect
 from django.views import View
 
 # from product.models import ProductTransaction
-from django.views.generic import FormView
+from django.views.generic import FormView, TemplateView
 
-from product.forms import AddNewProductForm, AddNewSupplierForm
-from product.models import Product, Color, Size, Category, Supplier, SupplierTransaction, ProductVariant, Customer, \
-    Order
+from product.forms import AddNewProductForm, AddNewSupplierForm, OrderForm, ItemForm, BaseItemFormSet
+from product.models import Product, Supplier, Customer, Order
 
 
 class ProductList(View):
@@ -58,3 +52,31 @@ class CustomerList(View):
 class OrderList(View):
     def get(self, request):
         return render(request, 'product/order_list.html', {"order_list": Order.objects.get_all_order()})
+
+
+class CreateInvoice(TemplateView):
+    template_name = 'product/create_invoice.html'
+    ItemFormSet = formset_factory(ItemForm, formset=BaseItemFormSet, extra=0)
+    item_formset = ItemFormSet()
+    order_form = OrderForm()
+    product_list = Product.objects.get_all_product()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        print(self.order_form)
+        context['order'] = self.order_form
+        context['items'] = self.item_formset
+        context['product_list'] = self.product_list
+        return context
+
+    def post(self, request):
+        self.item_formset = self.ItemFormSet(request.POST)
+        self.order_form = OrderForm(request.POST)
+        print(self.order_form)
+        if self.order_form.is_valid() and self.item_formset.is_valid():
+            pass
+        else:
+            return render(template_name=self.template_name, context={'order': self.order_form,
+                                                                     'items': self.item_formset,
+                                                                     'product_list': self.product_list},
+                          request=request)

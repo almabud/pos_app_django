@@ -32,8 +32,10 @@ class ProductManager(models.Manager):
         data = self.model.objects.all().prefetch_related(
             Prefetch("variant",
                      queryset=ProductVariant.objects.select_related('color', 'size', 'category').filter(
-                         stock_total__gt=0), to_attr="product_variant")).annotate(
-            total_stock=Sum('variant__stock_total'))
+                         stock_total__gt=0)
+                     .annotate(price=F('bag_purchase_price')+F('marketing_cost')+F('vat')+F('printing_cost')
+                                      +F('transport_cost')+F('profit')), to_attr="product_variant"))\
+            .annotate(total_stock=Sum('variant__stock_total'))
         return data
 
     @transaction.atomic

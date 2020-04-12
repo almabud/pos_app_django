@@ -214,6 +214,18 @@
                         <div class="row">
                             <div class="col-md-6 pr-md-1">
                                 <div class="form-group">
+                                    <label>Printing Cost
+                                        <span class="error_text" id="printing_error_text"></span>
+                                        {% if form.printing_cost.errors %}
+                                            {{ form.printing_cost.errors|striptags|json_script:"printing_error" }}
+                                        {% endif %}
+                                    </label>
+                                    {{ form.printing_cost }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 pr-md-1">
+                                <div class="form-group">
                                     <label>profit
                                         <span class="error_text" id="profit_error_text"></span>
                                         {% if form.profit.errors %}
@@ -223,7 +235,33 @@
                                     {{ form.profit }}
                                 </div>
                             </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 pr-md-1">
+                                <div class="form-group">
+                                    <label>Discount(%)
+                                        <span class="error_text" id="discount_error_text"></span>
+                                        {% if form.discount_percent.errors %}
+                                            {{ form.discount_percent.errors|striptags|json_script:"discount_error" }}
+                                        {% endif %}
+                                    </label>
+                                    {{ form.discount_percent }}
+                                </div>
+                            </div>
                             <div class="col-md-6 pl-md-1">
+                                <div class="form-group">
+                                    <label>Discount Min Purchase(piece)
+                                        <span class="error_text" id="discount_min_purchase_error_text"></span>
+                                        {% if form.discount_min_purchase.errors %}
+                                            {{ form.discount_min_purchase.errors|striptags|json_script:"discount_min_purchase_error" }}
+                                        {% endif %}
+                                    </label>
+                                    {{ form.discount_min_purchase }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
                                 <div class="form-group">
                                     <label>Total Stock
                                         <span class="error_text" id="stock_total_error_text"></span>

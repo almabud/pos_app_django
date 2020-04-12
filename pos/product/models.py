@@ -60,10 +60,12 @@ class ProductVariant(models.Model):
     gsm = models.CharField(max_length=4, choices=GSM_CHOICES)
     bag_purchase_price = models.FloatField(default=0.0)
     marketing_cost = models.FloatField(default=0.0)
-    vat = models.FloatField(default=0.0)
-    discount_percent = models.IntegerField(default=0)
-    profit = models.FloatField(default=0.0)
     transport_cost = models.FloatField(default=0.0)
+    printing_cost = models.FloatField(default=0.0)
+    vat = models.FloatField(default=0.0)
+    profit = models.FloatField(default=0.0)
+    discount_percent = models.IntegerField(default=0)
+    discount_min_purchase = models.IntegerField(default=0)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     color = models.ForeignKey(Color, related_name='product_color', on_delete=models.CASCADE)
     size = models.ForeignKey(Size, related_name='product_size', on_delete=models.CASCADE)
@@ -110,7 +112,7 @@ class Customer(models.Model):
     objects = CustomerManger()
 
     def __str__(self):
-        return self.customer_name
+        return "{} ({})".format(self.customer_name, self.customer_phone)
 
 
 class Order(models.Model):
@@ -125,7 +127,7 @@ class Order(models.Model):
     objects = OrderedManager()
 
     def __str__(self):
-        return self.customer.customer_name
+        return "{} ({})".format(self.customer.customer_name, self.customer.customer_phone)
 
 
 class OrderedItem(models.Model):
