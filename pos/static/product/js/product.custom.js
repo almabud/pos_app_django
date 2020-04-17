@@ -158,6 +158,16 @@ function checkFieldError() {
         $('#id_address').removeClass('error_border');
 
     }
+
+    if ($('#customer_phone_error').length) {
+        var customerPhoneError = JSON.parse($('#customer_phone_error').text());
+        $('#customer_phone_error_text').text(customerPhoneError);
+        $('#new_customer_phone').addClass('error_border');
+    } else {
+        customerPhoneError = '';
+        $('#new_customer_phone').removeClass('error_border');
+
+    }
 }
 
 function calculateGrandTotal() {
@@ -248,7 +258,7 @@ function addInvoiceItem(productVariant, currentObject) {
         'data-discount': productVariant.discount_percent,
         'data-min-purchase': productVariant.discount_min_purchase,
         'data-stock-total': productVariant.stock_total,
-        'max': productVariant.stock_total
+        'max': productVariant.stock_total,
     });
     var newInvoiceItem = '<tr class="nopadding invoice_row" style="cursor: pointer" id="invoice-item-' + productVariant.variant_id + '"  data-parent-id=' + currId + ' oncontextmenu="invoiceContextMenu()">' +
         '<td>' + $('#empty_form_product').html() + '<span>' + productVariant.variant_id + '</span>' + '</td>'
@@ -326,27 +336,100 @@ function removeInvoiceItem(currObj) {
     $('#id_form-TOTAL_FORMS').val(parseInt(form_idx) - 1);
     var grandTotal = calculateGrandTotal();
     disableOrEnablePaidetotalField();
+    $('#paid_total_field').removeClass('error_border');
     if (!isNaN(grandTotal.grandTotal)) {
         $('#paid_total_field').change();
     }
 
 }
 
+function printPosInvoice(html) {
+    html = html.slice(1, -1);
+    var myWindow = window.open('', 'Receipt', 'height=400,width=600');
+    myWindow.document.write('<html><head><title>Receipt</title>');
+    myWindow.document.write('<style type="text/css"> *, html {margin:0;padding:0;} </style>');
+    myWindow.document.write('</head><body>');
+    myWindow.document.write(html);
+    myWindow.document.write('</body></html>');
+    myWindow.document.close();
+    myWindow.onload = function () {
+        myWindow.focus();
+        myWindow.print();
+        myWindow.close();
+    };
+}
+
+function initNewCustomer() {
+    $('#new_customer').addClass('display-none');
+    $('#cancel_new_customer').removeClass('display-none');
+    $('#customer_select').val('');
+    $('#customer_select').attr('required', false);
+    $('#customer_select').addClass('display-none');
+
+
+    $('#new_customer_name').removeAttr('hidden');
+    $('#new_customer_name').attr('required', true);
+
+    $('#customer_phone').removeClass('display-none');
+    $('#customer_phone :input').attr('required', true);
+
+    $('#customer_address').removeClass('display-none');
+}
+
+function initInitialOrderForm() {
+    $('#customer_phone_error_text').text('');
+    $('#new_customer_phone').removeClass('error_border');
+
+    $('#new_customer').removeClass('display-none');
+    $('#cancel_new_customer').addClass('display-none');
+    $('#customer_select').removeClass('display-none');
+    $('#customer_select').attr('required', true);
+
+    $('#new_customer_name').val('');
+    $('#new_customer_name').attr('hidden', true);
+    $('#new_customer_name').removeAttr('required');
+
+    $('#customer_phone :input').val('');
+    $('#customer_phone').addClass('display-none');
+    $('#customer_phone :input').removeAttr('required');
+
+    $('#customer_address').find('textarea').val('');
+    $('#customer_address').addClass('display-none');
+}
+
 $(document).ready(function () {
     $('#product_list').DataTable({
-        'lengthChange': false,
-        'pageLength': 25,
+        "lengthChange": false,
+        "order": false,
+        "pageLength": 25,
         "language": {
             "search": "<span>Search</span>",
-        },
+        }
     });
+    $('#customer_select').attr('required', true);
     $('#product_list_filter input[type=search]').addClass('form-control');
     $('#product_list_filter > label').css({'margin-right': '10px', 'text-align': 'left'});
     $('#product_list_filter > label > span').css('margin-left', '8px');
     $('#submitButton').on('click', function (e) {
         if(!($('#paid_total_field').val())){
-            e.preventDefault();
+              e.preventDefault();
         }
+        if (!($('#paid_total_field').val()) && $('#invoice_item').children().length > 1) {
+            $('#paid_total_field').addClass('error_border');
+        }
+        else{
+            $('#paid_total_field').removeClass('error_border');
+        }
+    });
+    /* This part is used for preventing auto form submission when browser is refreshed.*/
+    window.history.replaceState( null, null, window.location.href );
+    /*End*/
+    $('#new_customer').on('click', function () {
+        initNewCustomer();
+    });
+
+    $('#cancel_new_customer').on('click', function () {
+        initInitialOrderForm();
     });
 
     initSize();

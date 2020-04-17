@@ -1,5 +1,8 @@
+import json
+
+from django.db.models import Prefetch
 from django.forms import formset_factory
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect
 
 # Create your views here.
@@ -10,6 +13,7 @@ from django.views.generic import FormView, TemplateView
 
 from product.forms import AddNewProductForm, AddNewSupplierForm, OrderForm, ItemForm, BaseItemFormSet
 from product.models import Product, Supplier, Customer, Order
+from scripts.pos_invoice_genarator import generate_pos_invoice
 
 
 class ProductList(View):
@@ -57,26 +61,30 @@ class OrderList(View):
 class CreateInvoice(TemplateView):
     template_name = 'product/create_invoice.html'
     ItemFormSet = formset_factory(ItemForm, formset=BaseItemFormSet, extra=0)
-    item_formset = ItemFormSet()
-    order_form = OrderForm()
-    product_list = Product.objects.get_all_product()
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        print(self.order_form)
-        context['order'] = self.order_form
-        context['items'] = self.item_formset
-        context['product_list'] = self.product_list
-        return context
+        product_list = Product.objects.get_all_product_stock_filter()
+        if 'items' not in kwargs:
+            kwargs['items'] = self.ItemFormSet()
+
+        if 'order' not in kwargs:
+            kwargs['order'] = OrderForm()
+
+        kwargs['product_list'] = product_list
+
+        return super().get_context_data(**kwargs)
 
     def post(self, request):
-        self.item_formset = self.ItemFormSet(request.POST)
-        self.order_form = OrderForm(request.POST)
-        print(self.order_form)
-        if self.order_form.is_valid() and self.item_formset.is_valid():
-            pass
+        item_formset = self.ItemFormSet(request.POST)
+        order_form = OrderForm(request.POST)
+        if order_form.is_valid() and item_formset.is_valid():
+            order = order_form.cleaned_data
+            items = item_formset.cleaned_data
+            order['sold_by'] = request.user
+            created_order = Order.objects.crate_new_order(order=order, items=items)
+            return self.render_to_response(self.get_context_data(pos_invoice=generate_pos_invoice(created_order), order_id=created_order.id))
         else:
-            return render(template_name=self.template_name, context={'order': self.order_form,
-                                                                     'items': self.item_formset,
-                                                                     'product_list': self.product_list},
-                          request=request)
+            # for field in order_form:
+            #     for error in field.errors:
+            #         print(error)
+            return self.render_to_response(self.get_context_data(order=order_form, selected_items=item_formset.cleaned_data))

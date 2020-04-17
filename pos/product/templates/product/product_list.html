@@ -10,7 +10,7 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive product_list_table">
-                        <table class="table table-hover" id="product_list" data-page-length='100'>
+                        <table class="table table-hover" id="product_list">
                             <thead class=" text-primary">
                             <th>ID</th>
                             <th>Product Name</th>
@@ -24,25 +24,28 @@
                             </thead>
                             <tbody>
                             {% for product in product_list %}
-                                {% for variant in product.product_variant %}
+                                    {% for variant in product.product_variant %}
+                                        <tr>
+                                            <td>{{ variant.id }}</td>
+                                            <td>{{ product.product_name }}</td>
+                                            <td>{{ variant.category }}</td>
+                                            <td>{{ variant.gsm }}</td>
+                                            <td>{{ variant.size }}</td>
+                                            <td>{{ variant.color }}</td>
+                                            <td class="text-right">{{ variant.price|floatformat:3 }}</td>
+                                            <td class="text-center">{{ variant.discount_percent }} <br> <span
+                                                    style="font-size: 10px;">Min purchase- {{ variant.discount_min_purchase }}</span>
+                                            </td>
+                                            <td class="text-right">{{ variant.stock_total }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    <thead>
                                     <tr>
-                                        <td>{{ variant.id }}</td>
-                                        <td>{{ product.product_name }}</td>
-                                        <td>{{ variant.category }}</td>
-                                        <td>{{ variant.gsm }}</td>
-                                        <td>{{ variant.size }}</td>
-                                        <td>{{ variant.color }}</td>
-                                        <td class="text-right">{{ variant.price|floatformat:3 }}</td>
-                                        <td class="text-center">{{ variant.discount_percent }} <br> <span style="font-size: 10px;">Min purchase- {{ variant.discount_min_purchase }}</span></td>
-                                        <td class="text-right">{{ variant.stock_total }}</td>
+                                        <th colspan="9" class="text-center product_summery">
+                                            Total {{ product.product_name }}
+                                            => {{ product.total_stock }}</th>
                                     </tr>
-                                {% endfor %}
-                                <thead>
-                                <tr>
-                                    <th colspan="9" class="text-center product_summery">Total {{ product.product_name }}
-                                        => {{ product.total_stock }}</th>
-                                </tr>
-                                </thead>
+                                    </thead>
                             {% endfor %}
                             </tbody>
                         </table>

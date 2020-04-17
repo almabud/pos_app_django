@@ -54,7 +54,6 @@ class AddNewProductForm(forms.Form):
     def clean(self):
         """If need more validation than default form validation. Then extend this method."""
         if 'new_product_name' in self.cleaned_data and self.cleaned_data['new_product_name']:
-            print(self.cleaned_data['new_product_name'])
             if Product.objects.filter(product_name__iexact=self.cleaned_data['new_product_name']).exists():
                 self.add_error('new_product_name', 'This product is already exist.')
                 raise forms.ValidationError('This product is already exist.')
@@ -137,20 +136,54 @@ class AddNewSupplierForm(ModelForm):
 
 
 class OrderForm(forms.Form):
-    customer = forms.ModelChoiceField(queryset=Customer.objects.all(),
+    customer_name = forms.CharField(required=False, max_length=255, widget=forms.TextInput(
+        attrs={'class': 'form-control', 'hidden': True, 'id': 'new_customer_name'}))
+
+    customer_address = forms.CharField(required=False,
+                                       widget=forms.Textarea(attrs={'class': 'form-control',
+                                                                    'id': 'new_customer_address'}))
+    customer_phone = forms.IntegerField(required=False,
+                                        widget=forms.NumberInput(
+                                            attrs={'class': 'form-control', 'id': 'new_customer_phone'}))
+    customer = forms.ModelChoiceField(required=False, queryset=Customer.objects.all(),
                                       widget=forms.Select(attrs={'class': 'form-control', 'id': 'customer_select'}))
     paid_total = forms.FloatField(widget=forms.NumberInput(attrs={'class': 'form-control', 'min': 0,
-                                                                  'id': 'paid_total_field', 'step': '.001', 'disabled': True}))
+                                                                  'id': 'paid_total_field', 'step': '1',
+                                                                  'disabled': True}))
+
+    def clean(self):
+        if 'customer' in self.cleaned_data and self.cleaned_data['customer']:
+            del self.cleaned_data['customer_name']
+            del self.cleaned_data['customer_phone']
+            del self.cleaned_data['customer_address']
+
+        if 'customer_name' in self.cleaned_data and not self.cleaned_data['customer_name']:
+            raise forms.ValidationError("Customer name field is required")
+        if 'customer_phone' in self.cleaned_data and not self.cleaned_data['customer_phone']:
+            raise forms.ValidationError("Customer phone field is required")
+
+        if all(k in self.cleaned_data for k in ['customer_name', 'customer_phone']):
+            if 'customer' in self.cleaned_data and self.cleaned_data['customer_name'] and self.cleaned_data['customer_phone']:
+                del self.cleaned_data['customer']
+            if Customer.objects.filter(customer_phone=self.cleaned_data['customer_phone']).exists():
+                self.add_error('customer_phone', 'This phone no is already exist.')
+                raise forms.ValidationError('This phone is already exist.')
+
+        return self.cleaned_data
 
 
 class ItemForm(forms.Form):
-    product = forms.IntegerField(required=True, widget=forms.NumberInput(attrs={'class': 'form-control invoice_readonly_field',
+    product = forms.IntegerField(required=True,
+                                 widget=forms.NumberInput(attrs={'class': 'form-control invoice_readonly_field',
                                                                  'min': 0, 'readonly': True, 'hidden': True}))
-    price_per_product = forms.FloatField(required=True, widget=forms.NumberInput(attrs={'class': 'form-control invoice_readonly_field',
+    price_per_product = forms.FloatField(required=True,
+                                         widget=forms.NumberInput(attrs={'class': 'form-control invoice_readonly_field',
                                                                          'min': 0, 'readonly': True, 'hidden': True}))
-    discount_percent = forms.IntegerField(required=True, widget=forms.NumberInput(attrs={'class': 'form-control invoice_readonly_field',
-                                                                          'min': 0, 'readonly': True, 'hidden': True}))
-    quantity = forms.IntegerField(required=True,  widget=forms.NumberInput(attrs={'class': 'form-control invoice_field quantity_field', 'min': 1}))
+    discount_percent = forms.IntegerField(required=True, widget=forms.NumberInput(
+        attrs={'class': 'form-control invoice_readonly_field',
+               'min': 0, 'readonly': True, 'hidden': True}))
+    quantity = forms.IntegerField(required=True, widget=forms.NumberInput(
+        attrs={'class': 'form-control invoice_field quantity_field', 'min': 1}))
 
 
 class BaseItemFormSet(BaseFormSet):

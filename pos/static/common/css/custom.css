@@ -87,3 +87,27 @@
     transform: translateY(-50%);
     -webkit-font-smoothing: antialiased;
 }
+
+.vertical-align {
+    position: absolute;
+    top: 50%;
+    /*left: 50%;*/
+    transform: translate(0%, -50%);
+    /*height: 50%;*/
+    /*width: 50%;*/
+}
+
+@media (min-width: 768px) {
+    .vertical-md-align {
+        position: absolute;
+        top: 50%;
+        transform: translate(0%, -50%);
+    }
+}
+
+.display-none{
+    display: none !important;
+}
+.display-block{
+    display: block !important;
+}

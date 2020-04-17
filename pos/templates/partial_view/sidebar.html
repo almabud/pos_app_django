@@ -26,8 +26,8 @@
               <p>Dashboard</p>
             </a>
           </li>
-          <li>
-            <a href="{% url 'dashboard:dashboard' %}">
+          <li class="{% active request 'product:create_invoice' 'active' %}">
+            <a href="{% url 'product:create_invoice' %}">
             <i class="nc-icon nc-calendar-60"></i>
               <p>Create Invoice</p>
             </a>

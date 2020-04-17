@@ -5,7 +5,7 @@ from django.utils.timezone import now
 
 from core.models import User
 from product.manager import ColorManager, ProductManager, SupplierTransactionManager, SupplierManager, CustomerManger, \
-    OrderedManager
+     OrderManager
 
 
 class Size(models.Model):
@@ -75,8 +75,8 @@ class ProductVariant(models.Model):
     class Meta:
         unique_together = ('color', 'size', 'product', 'gsm', 'category')
 
-    def __str__(self):
-        return self.product.product_name
+    # def __str__(self):
+    #     return self.product.product_name
 
 
 class Supplier(models.Model):
@@ -86,7 +86,8 @@ class Supplier(models.Model):
     address = models.TextField()
 
     def __str__(self):
-        return self.name
+        return "{} ({})".format(self.name, self.mobile_no)
+
     objects = SupplierManager()
 
 
@@ -112,32 +113,40 @@ class Customer(models.Model):
     objects = CustomerManger()
 
     def __str__(self):
-        return "{} ({})".format(self.customer_name, self.customer_phone)
+        return str("{} ({})".format(self.customer_name, self.customer_phone))
 
 
 class Order(models.Model):
     """This model store data about order"""
-    customer = models.ForeignKey(Customer, related_name='order_customer', null=True, blank=True, on_delete=models.SET_NULL)
+    customer = models.ForeignKey(Customer, related_name='order_customer', on_delete=models.CASCADE)
     sold_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
-    ordered_date = models.DateField(default=now)
+    ordered_date = models.DateTimeField(auto_now_add=True)
     is_paid = models.BooleanField(default=False)
     paid_total = models.FloatField(default=0)
-    paid_date = models.DateTimeField(null=True)
 
-    objects = OrderedManager()
+    objects = OrderManager()
 
     def __str__(self):
-        return "{} ({})".format(self.customer.customer_name, self.customer.customer_phone)
+        return "Order No- {}".format(str(self.id))
+
+
+class PaymentHistory(models.Model):
+    """This model track the payment history"""
+    order = models.ForeignKey(Order, related_name="payment_history", on_delete=models.CASCADE)
+    amount = models.FloatField(default=0)
+    date = models.DateTimeField(default=now)
+
+    def __str__(self):
+        return str('Payment No- {}'.format(self.id))
 
 
 class OrderedItem(models.Model):
     """This model store products of a particular order """
-    product = models.ForeignKey(ProductVariant, null=True, blank=True, on_delete=models.SET_NULL)
+    product = models.ForeignKey(ProductVariant, on_delete=models.CASCADE)
     price_per_product = models.FloatField(default=0.0)
     discount_percent = models.IntegerField(default=0)
     quantity = models.IntegerField(default=0)
-    order = models.ForeignKey(Order, related_name='ordered_item_order', on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, related_name='ordered_items', on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.product.product.product_name
-
+        return "Item No- {}".format(self.id)

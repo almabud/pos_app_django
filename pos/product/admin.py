@@ -27,8 +27,13 @@ class OrderedItemAdmin(admin.TabularInline):
     extra = 1
 
 
+class PaymentHistoryAdmin(admin.TabularInline):
+    model = models.PaymentHistory
+    extra = 1
+
+
 class OrderedAdmin(admin.ModelAdmin):
-    inlines = (OrderedItemAdmin,)
+    inlines = (OrderedItemAdmin, PaymentHistoryAdmin)
 
 
 admin.site.register(models.Size)
