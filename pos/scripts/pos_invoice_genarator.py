@@ -1,6 +1,6 @@
 def generate_pos_invoice(new_order):
     order_items = list(new_order.ordered_items.select_related('product', 'product__product', 'product__category', 'product__size', 'product__color'))
-    payment = new_order.payment_history.all()[0]
+    payment = new_order.payment_history.order_by('-date').first()
 
     total = 0.00
     item_row = ''

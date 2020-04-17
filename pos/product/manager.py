@@ -2,7 +2,7 @@ from decimal import *
 
 from django.core.exceptions import ValidationError
 from django.db import models, DatabaseError, transaction
-from django.db.models import Sum, Prefetch, F, When, Q, Value, Case, FloatField, QuerySet
+from django.db.models import Sum, Prefetch, F, When, Q, Value, Case, FloatField, QuerySet, ExpressionWrapper
 from django.db.models.functions import Coalesce
 
 
@@ -167,6 +167,39 @@ class OrderManager(models.Manager):
                       )).order_by('-total_due')
         return data
 
+    def get_order_detail(self, order_id):
+        from product.models import OrderedItem
+        from product.models import PaymentHistory
+        data = self.model.objects.filter(pk=order_id).prefetch_related(
+            Prefetch('ordered_items',
+                     queryset=OrderedItem.objects.annotate(
+                         sub_total=ExpressionWrapper(F('quantity') * F('price_per_product'), output_field=FloatField()))
+                     .select_related('product', 'product__product', 'product__category', 'product__color', 'product__size'),
+                     to_attr='items'
+                     ),
+            Prefetch('payment_history',
+                     queryset=PaymentHistory.objects.select_related('received_by').order_by('-date'),
+                     to_attr='order_payment_history'
+                     )
+        ).select_related(
+            'customer', 'sold_by') \
+            .annotate(
+            total_item=Coalesce(Sum('ordered_items__quantity'), Value(0)),
+            total_billed=Sum(
+                (F('ordered_items__quantity') * F('ordered_items__price_per_product'))
+                * (Value(1) - (F('ordered_items__discount_percent') / 100.00)),
+                output_field=FloatField()),
+            total_due=Case(
+                When(is_paid=False,
+                     then=Sum((F('ordered_items__quantity')
+                               * F('ordered_items__price_per_product'))
+                              * (Value(1) - (F('ordered_items__discount_percent') / 100.00))
+                              ) - F('paid_total')),
+                default=Value(0),
+                output_field=FloatField()
+            )).first()
+        return data
+
     @transaction.atomic
     def crate_new_order(self, order=None, items=None):
         if not order or not items:
@@ -198,11 +231,11 @@ class OrderManager(models.Manager):
 
         from product.models import OrderedItem
         from product.models import ProductVariant
-        """Save the paid total to as history"""
+        """Save the paid total as history"""
         if order['paid_total'] is not 0 or order['paid_total']:
             try:
                 from product.models import PaymentHistory
-                new_payment = PaymentHistory(order=new_order, amount=order['paid_total'])
+                new_payment = PaymentHistory(order=new_order, amount=order['paid_total'], received_by=order['sold_by'])
                 new_payment.save(using=self.db)
             except DatabaseError as e:
                 raise DatabaseError("Database technical issue")

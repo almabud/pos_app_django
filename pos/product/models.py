@@ -135,6 +135,7 @@ class PaymentHistory(models.Model):
     order = models.ForeignKey(Order, related_name="payment_history", on_delete=models.CASCADE)
     amount = models.FloatField(default=0)
     date = models.DateTimeField(default=now)
+    received_by = models.ForeignKey(User, related_name='received_by', blank=True, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return str('Payment No- {}'.format(self.id))

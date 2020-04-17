@@ -82,9 +82,28 @@ class CreateInvoice(TemplateView):
             items = item_formset.cleaned_data
             order['sold_by'] = request.user
             created_order = Order.objects.crate_new_order(order=order, items=items)
-            return self.render_to_response(self.get_context_data(pos_invoice=generate_pos_invoice(created_order), order_id=created_order.id))
+            return self.render_to_response(
+                self.get_context_data(pos_invoice=generate_pos_invoice(created_order), order_id=created_order.id))
         else:
             # for field in order_form:
             #     for error in field.errors:
             #         print(error)
-            return self.render_to_response(self.get_context_data(order=order_form, selected_items=item_formset.cleaned_data))
+            return self.render_to_response(
+                self.get_context_data(order=order_form, selected_items=item_formset.cleaned_data))
+
+
+class OrderDetail(TemplateView):
+    template_name = 'product/order_details'
+
+    # @property
+    # def order_id(self):
+    #     test = self.kwargs['order_id']
+    #     print(test)
+    #     return str(test)
+        # return int(self.kwargs['order_id'])
+
+    def get_context_data(self, **kwargs):
+        order_details = Order.objects.get_order_detail(order_id=self.kwargs['order_id'])
+        kwargs['order_details'] = order_details
+
+        return super().get_context_data(**kwargs)

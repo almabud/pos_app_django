@@ -397,32 +397,36 @@ function initInitialOrderForm() {
     $('#customer_address').addClass('display-none');
 }
 
+function redirect_order_details(urlPath) {
+    var url = window.location.origin + urlPath;
+    document.location.href = url;
+}
+
 $(document).ready(function () {
     $('#product_list').DataTable({
         "lengthChange": false,
-        "order": false,
         "pageLength": 25,
+        "order": [],
         "language": {
             "search": "<span>Search</span>",
-        }
+        },
     });
     $('#customer_select').attr('required', true);
     $('#product_list_filter input[type=search]').addClass('form-control');
     $('#product_list_filter > label').css({'margin-right': '10px', 'text-align': 'left'});
     $('#product_list_filter > label > span').css('margin-left', '8px');
     $('#submitButton').on('click', function (e) {
-        if(!($('#paid_total_field').val())){
-              e.preventDefault();
+        if (!($('#paid_total_field').val())) {
+            e.preventDefault();
         }
         if (!($('#paid_total_field').val()) && $('#invoice_item').children().length > 1) {
             $('#paid_total_field').addClass('error_border');
-        }
-        else{
+        } else {
             $('#paid_total_field').removeClass('error_border');
         }
     });
     /* This part is used for preventing auto form submission when browser is refreshed.*/
-    window.history.replaceState( null, null, window.location.href );
+    window.history.replaceState(null, null, window.location.href);
     /*End*/
     $('#new_customer').on('click', function () {
         initNewCustomer();
