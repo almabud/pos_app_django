@@ -148,7 +148,7 @@ class OrderForm(forms.Form):
     customer = forms.ModelChoiceField(required=False, queryset=Customer.objects.all(),
                                       widget=forms.Select(attrs={'class': 'form-control', 'id': 'customer_select'}))
     paid_total = forms.FloatField(widget=forms.NumberInput(attrs={'class': 'form-control', 'min': 0,
-                                                                  'id': 'paid_total_field', 'step': '1',
+                                                                  'id': 'paid_total_field', 'step': '.01',
                                                                   'disabled': True}))
 
     def clean(self):

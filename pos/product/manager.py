@@ -254,7 +254,8 @@ class OrderManager(models.Manager):
 
         """Update the stock of the items"""
         for i in range(len(items)):
-            new_item_queryset[i].stock_total = new_item_queryset[i].stock_total - items[i]['quantity']
+            new_stock = new_item_queryset[i].stock_total - items[i]['quantity']
+            new_item_queryset[i].stock_total = new_stock if new_stock >= 0 else 0
 
         try:
             ProductVariant.objects.bulk_update(new_item_queryset, ['stock_total'])
@@ -262,3 +263,23 @@ class OrderManager(models.Manager):
             raise DatabaseError("Database technical issue")
 
         return new_order
+
+    @transaction.atomic
+    def make_payment(self, order_id, amount, received_by):
+        """This method is responsible for add new payment to payment history"""
+        if not order_id or not amount or not received_by:
+            raise ValueError("All field is required")
+        order = self.model.objects.get(id=order_id)
+        order.paid_total = order.paid_total + float(amount)
+        try:
+            order.save(using=self.db)
+        except DatabaseError as e:
+            raise DatabaseError("Database technical issue")
+
+        try:
+            from product.models import PaymentHistory
+            new_payment = PaymentHistory(order=order, amount=amount, received_by=received_by)
+            new_payment.save(using=self.db)
+        except DatabaseError as e:
+            raise DatabaseError("Database technical issue")
+        return new_payment

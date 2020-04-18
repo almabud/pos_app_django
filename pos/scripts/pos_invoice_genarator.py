@@ -1,12 +1,6 @@
-def generate_pos_invoice(new_order):
-    order_items = list(new_order.ordered_items.select_related('product', 'product__product', 'product__category', 'product__size', 'product__color'))
-    payment = new_order.payment_history.order_by('-date').first()
-
-    total = 0.00
+def generate_pos_invoice(order_details):
     item_row = ''
-    for item in order_items:
-        sub_total = (item.price_per_product * item.quantity) * (1.0 - (item.discount_percent/100.00))
-        total += sub_total
+    for item in order_details.items:
         temp_item_row = """
             <tr class="service">
                 <td class="tableitem item-name"><p class="itemtext">{} ({}, {}, {}, {})</p></td>
@@ -20,11 +14,10 @@ def generate_pos_invoice(new_order):
             item.product.gsm,
             item.product.category.category,
             item.quantity,
-            sub_total
+            item.sub_total
         )
         item_row += temp_item_row
 
-    total_due = total - new_order.paid_total
     item_end = """
         <tr class="tabletitle">
             <td></td>
@@ -41,7 +34,7 @@ def generate_pos_invoice(new_order):
             <td class="Rate"><h2>Due</h2></td>
             <td class="payment"><h2>{:.3f}</h2></td>
         </tr>
-    """.format(total, payment.date, new_order.paid_total, total_due)
+    """.format(order_details.total_billed, order_details.order_payment_history[0].date, order_details.paid_total, order_details.total_due)
 
     middle_html = item_row + item_end
     invoice_html = get_style() + get_html_first_part() + middle_html + get_html_last_part()

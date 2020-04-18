@@ -82,8 +82,9 @@ class CreateInvoice(TemplateView):
             items = item_formset.cleaned_data
             order['sold_by'] = request.user
             created_order = Order.objects.crate_new_order(order=order, items=items)
+            order_details = Order.objects.get_order_detail(created_order.id)
             return self.render_to_response(
-                self.get_context_data(pos_invoice=generate_pos_invoice(created_order), order_id=created_order.id))
+                self.get_context_data(pos_invoice=generate_pos_invoice(order_details), order_id=created_order.id))
         else:
             # for field in order_form:
             #     for error in field.errors:
@@ -95,15 +96,15 @@ class CreateInvoice(TemplateView):
 class OrderDetail(TemplateView):
     template_name = 'product/order_details'
 
-    # @property
-    # def order_id(self):
-    #     test = self.kwargs['order_id']
-    #     print(test)
-    #     return str(test)
-        # return int(self.kwargs['order_id'])
-
     def get_context_data(self, **kwargs):
         order_details = Order.objects.get_order_detail(order_id=self.kwargs['order_id'])
         kwargs['order_details'] = order_details
+        kwargs['pos_invoice'] = generate_pos_invoice(order_details)
 
         return super().get_context_data(**kwargs)
+
+    def post(self, request, order_id):
+        current_user = request.user
+        new_payment = Order.objects.make_payment(order_id, request.POST['amount'], current_user)
+        return HttpResponseRedirect(self.request.path_info)
+
