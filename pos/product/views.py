@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 from django.db.models import Prefetch
 from django.forms import formset_factory
@@ -11,15 +12,101 @@ from django.views import View
 # from product.models import ProductTransaction
 from django.views.generic import FormView, TemplateView
 
-from product.forms import AddNewProductForm, AddNewSupplierForm, OrderForm, ItemForm, BaseItemFormSet
-from product.models import Product, Supplier, Customer, Order
+from product.forms import AddNewProductForm, AddNewSupplierForm, OrderForm, ItemForm, BaseItemFormSet, ProductForm, \
+    VariantForm, NewStockForm
+from product.models import Product, Supplier, Customer, Order, ProductVariant
 from scripts.pos_invoice_genarator import generate_pos_invoice
 
 
-class ProductList(View):
-    def get(self, request):
-        return render(request, 'product/product_list.html', {"product_list": Product.objects.get_all_product()})
-        # return HttpResponse(all_products[0].quantity)
+class ProductList(TemplateView):
+    template_name = 'product/product_list.html'
+
+    def get_context_data(self, **kwargs):
+        kwargs['product_list'] = Product.objects.get_all_product()
+        return super().get_context_data(**kwargs)
+
+    def post(self, request):
+        if request.is_ajax():
+            id = request.POST['variant_id']
+            if id:
+                if ProductVariant.objects.delete_variant(id):
+                    return JsonResponse('success', status=200, safe=False)
+                else:
+                    return JsonResponse('error', status=400, safe=False)
+            else:
+                return JsonResponse('error', status=400, safe=False)
+
+
+class VariantDetails(TemplateView):
+    template_name = 'product/variant_details.html'
+
+    def get_context_data(self, **kwargs):
+        variant_id = kwargs['variant_id']
+        variant_details = ProductVariant.objects.get_product_variant_details(variant_id)
+        product_edit_form = ProductForm(initial={
+            'product_name': variant_details.product.product_name,
+            'product_description': variant_details.product.product_description
+        })
+        variant_edit_form = VariantForm(initial={
+            'product': variant_details.product,
+            'new_product_name': variant_details.product.product_name,
+            'product_description': variant_details.product.product_description,
+            'gsm': variant_details.gsm,
+            'color': variant_details.color,
+            'size': variant_details.size,
+            'category': variant_details.category,
+            'bag_purchase_price': variant_details.bag_purchase_price,
+            'marketing_cost': variant_details.marketing_cost,
+            'transport_cost': variant_details.transport_cost,
+            'printing_cost': variant_details.printing_cost,
+            'vat': variant_details.vat,
+            'profit': variant_details.profit,
+            'discount_percent': variant_details.discount_percent,
+            'discount_min_purchase': variant_details.discount_min_purchase,
+            'stock_total': variant_details.stock_total
+        })
+        kwargs['variant_details'] = variant_details
+        kwargs['product_form'] = product_edit_form
+        kwargs['variant_form'] = variant_edit_form
+        kwargs['new_stock_form'] = NewStockForm()
+        return super().get_context_data(**kwargs)
+
+    def post(self, request, variant_id):
+        if request.is_ajax():
+            data = request.POST
+            # print(data['id'])
+            if 'is_product_edited' in data and data['is_product_edited']:
+                form = ProductForm(data)
+                if form.is_valid():
+                    cleaned_data = form.cleaned_data
+                    Product.objects.update_product(data['id'], cleaned_data)
+                    return JsonResponse("success", status=201, safe=False)
+                else:
+                    return JsonResponse(form.errors, status=400)
+            elif 'is_variant_edited' in data and data['is_variant_edited']:
+                form = VariantForm(data)
+                if form.is_valid():
+                    cleaned_data = form.cleaned_data
+                    ProductVariant.objects.update_variant(variant_id, cleaned_data)
+                    return JsonResponse("success", status=201, safe=False)
+                else:
+                    return JsonResponse(form.errors, status=400)
+            else:
+                form = NewStockForm(data)
+                if form.is_valid():
+                    cleaned_data = form.cleaned_data
+                    supplier = ProductVariant.objects.add_new_stock(id=variant_id, form_data=cleaned_data)
+                    date = datetime.strftime(supplier.date, '%d/%m/%Y %I:%M %p')
+                    return JsonResponse({'date': date, 'name': cleaned_data['supplier'].name,
+                                         'mobile_no': cleaned_data['supplier'].mobile_no,
+                                         'total_supplied': supplier.total_supplied,
+                                         'address': cleaned_data['supplier'].address}, status=201)
+                else:
+                    return JsonResponse(form.errors, status=400)
+
+
+class ProductDetails(TemplateView):
+    template_name = 'product/product_details.html'
 
 
 class AddNewProduct(FormView):
@@ -46,6 +133,31 @@ class AddNewSupplier(FormView):
         # clean_form = form.cleaned_data
         supplier = form.save()
         return redirect('product:supplier_list')
+
+
+class SupplierDetail(TemplateView):
+    template_name = 'product/supplier_details.html'
+
+    def get_context_data(self, **kwargs):
+        supplier_id = kwargs['supplier_id']
+        supplier_details = Supplier.objects.get_supplier_details(supplier_id)
+        supplier_edit_form = AddNewSupplierForm(initial={'name': supplier_details.name,
+                                                         'mobile_no': supplier_details.mobile_no,
+                                                         'address': supplier_details.address})
+        kwargs['supplier_details'] = supplier_details
+        kwargs['form'] = supplier_edit_form
+        return super().get_context_data(**kwargs)
+
+    def post(self, request, supplier_id):
+        if request.is_ajax():
+            data = request.POST
+            form = AddNewSupplierForm(data)
+            if form.is_valid():
+                cleaned_data = form.cleaned_data
+                Supplier.objects.update_supplier(id=supplier_id, data=cleaned_data)
+                return JsonResponse("success", status=201, safe=False)
+            else:
+                return JsonResponse(form.errors, status=400)
 
 
 class CustomerList(View):
@@ -94,7 +206,7 @@ class CreateInvoice(TemplateView):
 
 
 class OrderDetail(TemplateView):
-    template_name = 'product/order_details'
+    template_name = 'product/order_details.html'
 
     def get_context_data(self, **kwargs):
         order_details = Order.objects.get_order_detail(order_id=self.kwargs['order_id'])
@@ -107,4 +219,3 @@ class OrderDetail(TemplateView):
         current_user = request.user
         new_payment = Order.objects.make_payment(order_id, request.POST['amount'], current_user)
         return HttpResponseRedirect(self.request.path_info)
-

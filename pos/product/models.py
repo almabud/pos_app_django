@@ -5,7 +5,7 @@ from django.utils.timezone import now
 
 from core.models import User
 from product.manager import ColorManager, ProductManager, SupplierTransactionManager, SupplierManager, CustomerManger, \
-     OrderManager
+    OrderManager, ProductVariantManager
 
 
 class Size(models.Model):
@@ -72,6 +72,8 @@ class ProductVariant(models.Model):
     stock_total = models.IntegerField(default=0)
     product = models.ForeignKey(Product, related_name='variant', on_delete=models.CASCADE)
 
+    objects = ProductVariantManager()
+
     class Meta:
         unique_together = ('color', 'size', 'product', 'gsm', 'category')
 
@@ -82,7 +84,7 @@ class ProductVariant(models.Model):
 class Supplier(models.Model):
     """This model define the supplier details"""
     name = models.CharField(max_length=100)
-    mobile_no = models.CharField(unique=True, max_length=16)
+    mobile_no = models.CharField(unique=True, max_length=11)
     address = models.TextField()
 
     def __str__(self):
@@ -107,7 +109,7 @@ class SupplierTransaction(models.Model):
 class Customer(models.Model):
     """This model store data about customer"""
     customer_name = models.CharField(max_length=100)
-    customer_phone = models.CharField(unique=True, max_length=16)
+    customer_phone = models.CharField(unique=True, max_length=11)
     customer_address = models.TextField(max_length=200, null=True)
 
     objects = CustomerManger()
@@ -143,7 +145,7 @@ class PaymentHistory(models.Model):
 
 class OrderedItem(models.Model):
     """This model store products of a particular order """
-    product = models.ForeignKey(ProductVariant, on_delete=models.CASCADE)
+    product = models.ForeignKey(ProductVariant, related_name='OrderedItem_variants', on_delete=models.CASCADE)
     price_per_product = models.FloatField(default=0.0)
     discount_percent = models.IntegerField(default=0)
     quantity = models.IntegerField(default=0)

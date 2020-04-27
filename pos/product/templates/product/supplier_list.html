@@ -20,7 +20,8 @@
                         </thead>
                         <tbody>
                         {% for supplier in supplier_list %}
-                            <tr>
+                            <tr onclick="redirect_new_page('{% url 'product:supplier_details' supplier.id %}')"
+                                style="cursor: pointer !important;">
                                 <td>{{ supplier.id }}</td>
                                 <td>{{ supplier.name }}</td>
                                 <td>{{ supplier.mobile_no }}</td>
@@ -35,7 +36,13 @@
         </div>
     </div>
     {% block add_new_js %}
-        <script src="{% static  '/product/js/product.custom.js' %}"></script>
+        <script>
+            $(document).ready(function () {
+                initDatatable();
+                preventAutoFormSubmission();
+                /*----------------------*/
+            });
+        </script>
     {% endblock %}
 {% endblock %}
 

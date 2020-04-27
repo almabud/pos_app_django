@@ -17,7 +17,6 @@
                         <h5 class="card-title">Add new product</h5>
                     </div>
                     <div class="card-body">
-                        <!--                <form>-->
                         <div class="row">
                             <div class="col-md-11">
                                 <div class="form-group">
@@ -285,7 +284,20 @@
     </form>
 
     {% block add_new_js %}
-        <script src="{% static '/product/js/product.custom.js' %}"></script>
+        <script src="{% static '/product/js/check_field_error.js' %}"></script>
+        <script src="{% static '/product/js/add_new_product.js' %}"></script>
+        <script>
+            $(document).ready(function () {
+                initDatatable();
+                preventAutoFormSubmission();
+                checkFieldError();
+                /*----------------------*/
+                initSize();
+                initColor();
+                initCategory();
+                initProduct();
+            });
+        </script>
     {% endblock %}
 {% endblock %}
 

@@ -12,4 +12,7 @@ urlpatterns = [
     path('order_list/', views.OrderList.as_view(), name='order_list'),
     path('create_invoice/', views.CreateInvoice.as_view(), name='create_invoice'),
     path('order_details/<int:order_id>/', views.OrderDetail.as_view(), name='order_details'),
+    path('supplier_details/<int:supplier_id>/', views.SupplierDetail.as_view(), name='supplier_details'),
+    path('variant_details/<int:variant_id>/', views.VariantDetails.as_view(), name='variant_details'),
+    path('product_details/<int:product_id>/', views.ProductDetails.as_view(), name='product_details'),
 ]

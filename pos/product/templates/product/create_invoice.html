@@ -215,12 +215,12 @@
                                         </tr>
                                     {% endif %}
                                 {% endfor %}
-                                <thead>
-                                <tr>
-                                    <th colspan="9" class="text-center product_summery">Total {{ product.product_name }}
-                                        => {{ product.total_stock }}</th>
-                                </tr>
-                                </thead>
+{#                                <thead>#}
+{#                                <tr>#}
+{#                                    <th colspan="9" class="text-center product_summery">Total {{ product.product_name }}#}
+{#                                        => {{ product.total_stock }}</th>#}
+{#                                </tr>#}
+{#                                </thead>#}
                             {% endfor %}
                             </tbody>
                         </table>
@@ -234,9 +234,44 @@
     {% endfor %}
 
     {% block add_new_js %}
-        <script src="{% static '/product/js/product.custom.js' %}"></script>
+        <script src="{% static '/product/js/check_field_error.js' %}"></script>
+        <script src="{% static '/product/js/create_invoice.js' %}"></script>
         <script>
             $(document).ready(function () {
+                initDatatable();
+                preventAutoFormSubmission();
+                checkFieldError();
+                /*----------------------*/
+                checkTableEmpty();
+                paidTotalInputFieldChange();
+
+                $('#customer_select').attr('required', true);
+                $('#new_customer').on('click', function () {
+                    initNewCustomer();
+                });
+
+                $('#contextMenu').click(function () {
+                    $('#contextMenu').removeClass('is-open');
+                });
+                $(document).click(function () {
+                    $('#contextMenu').removeClass('is-open');
+                });
+
+                $('#cancel_new_customer').on('click', function () {
+                    initInitialOrderForm();
+                });
+
+                $('#submitButton').on('click', function (e) {
+                    if (!($('#paid_total_field').val())) {
+                        e.preventDefault();
+                    }
+                    if (!($('#paid_total_field').val()) && $('#invoice_item').children().length > 1) {
+                        $('#paid_total_field').addClass('error_border');
+                    } else {
+                        $('#paid_total_field').removeClass('error_border');
+                    }
+                });
+
                 {% if order.customer_phone.errors %}
                     initNewCustomer();
                 {% endif %}

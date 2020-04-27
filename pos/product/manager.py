@@ -2,7 +2,8 @@ from decimal import *
 
 from django.core.exceptions import ValidationError
 from django.db import models, DatabaseError, transaction
-from django.db.models import Sum, Prefetch, F, When, Q, Value, Case, FloatField, QuerySet, ExpressionWrapper
+from django.db.models import Prefetch, F, When, Q, Value, Case, FloatField, QuerySet, ExpressionWrapper, Sum, Avg, \
+    Count, IntegerField
 from django.db.models.functions import Coalesce
 
 
@@ -27,26 +28,31 @@ class ColorManager(models.Manager):
         return objects
 
 
-class ProductQuerySet(QuerySet):
+class ProductManager(models.Manager):
     def get_all_product(self):
         from product.models import ProductVariant
-        return self.model.objects.all().prefetch_related(
+        from product.models import OrderedItem
+        data = self.model.objects.prefetch_related(
+            Prefetch("variant",
+                     queryset=ProductVariant.objects.select_related('color', 'size', 'category').prefetch_related(
+                         'OrderedItem_variants',
+                     )
+                     .annotate(price=F('bag_purchase_price') + F('marketing_cost') + F('vat') + F('printing_cost')
+                                     + F('transport_cost') + F('profit')).annotate(total_order=Count('OrderedItem_variants')).order_by('-stock_total'),
+                     to_attr="product_variant")) \
+            .annotate(total_stock=Sum('variant__stock_total')).order_by('-total_stock')
+        return data
+
+    def get_all_product_stock_filter(self):
+
+        from product.models import ProductVariant
+        return self.model.objects.prefetch_related(
             Prefetch("variant",
                      queryset=ProductVariant.objects.select_related('color', 'size', 'category')
                      .annotate(price=F('bag_purchase_price') + F('marketing_cost') + F('vat') + F('printing_cost')
-                                     + F('transport_cost') + F('profit')), to_attr="product_variant")) \
+                                     + F('transport_cost') + F('profit')).filter(stock_total__gt=0).order_by('id'),
+                     to_attr="product_variant")) \
             .annotate(total_stock=Sum('variant__stock_total'))
-
-
-class ProductManager(models.Manager):
-    def get_query_set(self):
-        return ProductQuerySet(self.model, using=self.db)
-
-    def get_all_product(self):
-        return self.get_query_set().get_all_product().order_by('-variant__stock_total')
-
-    def get_all_product_stock_filter(self):
-        return self.get_query_set().get_all_product().filter(variant__stock_total__gt=0)
 
     @transaction.atomic
     def create_product(self, **fields):
@@ -110,11 +116,67 @@ class ProductManager(models.Manager):
                 'Product name, color, size, gsm, category, marketing cost, vat, bag purchase price, transport cost, '
                 'stock total, profit can\t be empty')
 
-    # def get_single_product(self, id):
-    #     return self.model.objects.filter(pk=id).prefetch_related(Prefetch(
-    #         "variant",
-    #         queryset=ProductVariant.objects.select_related('color', 'size').filter(stock_total__gt=0),
-    #         to_attr="product_variant")).annotate(total_stock=Sum('variant__stock_total'))
+    def update_product(self, id, data):
+        old_product = self.model.objects.get(id=id)
+        old_product.product_name = data['product_name']
+        old_product.product_description = data['product_description']
+        try:
+            old_product.save(using=self.db)
+        except DatabaseError as e:
+            raise DatabaseError("Database technical problem updating product")
+        return old_product
+
+
+class ProductVariantManager(models.Manager):
+    def get_product_variant_details(self, id):
+        from product.models import SupplierTransaction
+        return self.model.objects.filter(id=id).select_related('size', 'color', 'category', 'product') \
+            .prefetch_related(
+            Prefetch('product_variant',
+                     queryset=SupplierTransaction.objects.select_related('supplier').order_by('-date'),
+                     to_attr='supplier_list'
+                     )
+
+        ).annotate(price=F('bag_purchase_price') + F('marketing_cost') + F('vat') + F('printing_cost')
+                         + F('transport_cost') + F('profit')).first()
+
+    @transaction.atomic
+    def update_variant(self, id, form_data):
+        old_variant = self.model.objects.get(id=id)
+        for key, value in form_data.items():
+            setattr(old_variant, key, value)
+
+        try:
+            old_variant.save(using=self.db)
+        except DatabaseError as e:
+            raise DatabaseError("In updating variant there is database technical problem.")
+        return old_variant
+
+    @transaction.atomic
+    def add_new_stock(self, id, form_data):
+        old_variant = self.model.objects.get(id=id)
+        old_variant.stock_total = old_variant.stock_total + form_data['new_stock']
+        from product.models import SupplierTransaction
+        try:
+            old_variant.save(using=self.db)
+        except DatabaseError as e:
+            raise DatabaseError("Adding new stock problem in database")
+        try:
+            supplier = SupplierTransaction(supplier=form_data['supplier'], product=old_variant, total_supplied=form_data['new_stock'])
+            supplier.save(using=self.db)
+        except DatabaseError as e:
+            raise DatabaseError("Adding supplier info problem in database")
+        return supplier
+
+    @transaction.atomic
+    def delete_variant(self, id):
+        if id is None:
+            raise ValueError("Id is required")
+        try:
+            self.model.objects.get(id=id).delete()
+        except DatabaseError as e:
+            raise DatabaseError("Technical problem to delete variant")
+        return True
 
 
 class SupplierManager(models.Manager):
@@ -123,28 +185,61 @@ class SupplierManager(models.Manager):
             .annotate(total_supplied=Coalesce(Sum('product_supplier__total_supplied'), Value(0)))
         return data
 
+    def get_supplier_details(self, id):
+        from product.models import SupplierTransaction
+        data = self.model.objects.filter(id=1).prefetch_related(
+            Prefetch('product_supplier', queryset=SupplierTransaction.objects.select_related(
+                'product', 'product__size', 'product__color', 'product__category', 'product__product').order_by(
+                '-date'), to_attr='product_list')
+        ).first()
+        return data
+
+    @transaction.atomic
+    def update_supplier(self, id, data):
+        if not id or not data:
+            raise ValueError('This field is required')
+
+        if all(key in data and data[key] for key in ['name', 'mobile_no', 'address']):
+            try:
+                old_supplier = self.model.objects.get(id=id)
+                old_supplier.name = data['name']
+                old_supplier.mobile_no = data['mobile_no']
+                old_supplier.address = data['address']
+                old_supplier.save(using=self.db)
+            except DatabaseError as e:
+                raise DatabaseError("Database technical problem")
+        else:
+            raise ValueError("name, mobile_no, address are required.")
+
+        return old_supplier
+
 
 class SupplierTransactionManager(models.Manager):
     def get_all_supplier(self):
         data = self.model.objects.all()
-        print(data)
         return data
 
 
 class CustomerManger(models.Manager):
     def get_all_customer(self):
-        data = self.model.objects.all().prefetch_related('order_customer', 'order_customer__ordered_item_order') \
-            .annotate(total_item=Sum('order_customer__ordered_item_order__quantity'),
-                      total_due=Case(
-                          When(order_customer__is_paid=False,
-                               then=Sum((F('order_customer__ordered_item_order__quantity')
-                                         * F('order_customer__ordered_item_order__price_per_product'))
-                                        * (Value(1) - (
-                                       F('order_customer__ordered_item_order__discount_percent') / 100.00))
-                                        ) - F('order_customer__paid_total')),
-                          default=Value(0),
-                          output_field=FloatField()
-                      ))
+        total_billed = self.model.objects.prefetch_related('order_customer', 'order_customer__ordered_items') \
+            .aggregate(
+            total_billed=Sum(
+                (F('order_customer__ordered_items__quantity') * F('order_customer__ordered_items__price_per_product')) *
+                (Value(1) - F('order_customer__ordered_items__discount_percent') / 100.00),
+                output_field=FloatField()
+            ),
+            total_item=Sum(F('order_customer__ordered_items__quantity'), output_field=IntegerField())
+        )
+
+        data = self.model.objects.prefetch_related('order_customer', 'order_customer__ordered_items') \
+            .annotate(
+            total_due=ExpressionWrapper(
+                Value(total_billed['total_billed']) - Sum(F('order_customer__paid_total'), output_field=FloatField()),
+                output_field=FloatField()),
+            total_item=Value(total_billed['total_item'], output_field=IntegerField())
+        )
+
         return data
 
 
@@ -174,7 +269,8 @@ class OrderManager(models.Manager):
             Prefetch('ordered_items',
                      queryset=OrderedItem.objects.annotate(
                          sub_total=ExpressionWrapper(F('quantity') * F('price_per_product'), output_field=FloatField()))
-                     .select_related('product', 'product__product', 'product__category', 'product__color', 'product__size'),
+                     .select_related('product', 'product__product', 'product__category', 'product__color',
+                                     'product__size'),
                      to_attr='items'
                      ),
             Prefetch('payment_history',

@@ -22,8 +22,7 @@
                                     <div class="modal-dialog modal-dialog-centered" role="document">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h5 class="modal-title" id="supplierEditModalLabel">Edit Supplier
-                                                    info</h5>
+                                                <h5 class="modal-title" id="supplierEditModalLabel">Edit Supplier info</h5>
                                             </div>
                                             <form method="post">
                                                 {% csrf_token %}
@@ -192,15 +191,11 @@
                 </div>
             </div>
         </div>
-
     </div>
     {% block add_new_js %}
+        <script src="{% static  '/product/js/product.custom.js' %}"></script>
         <script>
             $(document).ready(function () {
-                initDatatable();
-                preventAutoFormSubmission();
-                {#checkFieldError();#}
-                /*----------------------*/
                 var name = $(`{{ form.name }}`).val();
                 var mobileNo = $(`{{ form.mobile_no }}`).val();
                 var address = $(`{{ form.address }}`).val();
@@ -214,7 +209,7 @@
 
                 $("form").bind("submit", function (e) {
                     e.preventDefault();
-                    if ($('#id_mobile_no').val() == mobileNo) {
+                    if($('#id_mobile_no').val() == mobileNo){
                         $('#supplierId').val(1);
                     }
                     var data = $(this).serialize();
@@ -225,7 +220,6 @@
                         type: 'POST',
                         data: data,
                         success: function (data, textStatus, jqXHR) {
-                            $('#supplierId').val(0);
                             $('#spinner').addClass('display-none');
                             $('#save_btn_txt').removeClass('display-none');
                             $('#mobile_no_error_text').text('');
@@ -240,7 +234,6 @@
                             $('#supplier_address_txt').val(address);
                         },
                         error: function (data, textStatus, jqXHR) {
-                            $('#supplierId').val(0);
                             $('#spinner').addClass('display-none');
                             $('#save_btn_txt').removeClass('display-none');
                             var errors = data.responseJSON;

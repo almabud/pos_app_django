@@ -9,7 +9,7 @@ var Paths = {
   HERE: './',
   DIST: 'dist/',
   CSS: './css/',
-  SCSS_TOOLKIT_SOURCES: './add_new_employee.scss',
+  SCSS_TOOLKIT_SOURCES: './sr.scss',
   SCSS: './scss/**/**'
 };
 

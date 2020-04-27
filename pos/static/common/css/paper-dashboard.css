@@ -1936,7 +1936,7 @@ fieldset[disabled] .btn-link.active {
 
 .form-group .form-control,
 .input-group .form-control {
-  padding: 10px 10px 10px 10px;
+  /*padding: 10px 10px 10px 10px;*/
 }
 
 .form-group .form-control+.input-group-prepend .input-group-text,

@@ -1,7 +1,78 @@
 from django import forms
-from django.forms import ModelForm, TextInput, NumberInput, Textarea, BaseFormSet
+from django.forms import ModelForm, TextInput, NumberInput, Textarea, BaseFormSet, Select
 
-from product.models import Category, Size, Color, Product, Supplier, Order, Customer
+from product.models import Category, Size, Color, Product, Supplier, Order, Customer, ProductVariant
+
+
+class ProductForm(forms.ModelForm):
+    is_product_edited = forms.IntegerField(
+        widget=forms.NumberInput(attrs={'value': '0', 'id': 'isProductEdited', 'hidden': True}))
+
+    class Meta:
+        model = Product
+        fields = ['product_name', 'product_description']
+        widgets = {
+            'product_name': TextInput(
+                attrs={'class': 'form-control', 'id': 'productName'}),
+            'product_description': Textarea(
+                attrs={'class': 'form-control', 'id': 'productDescription'}),
+        }
+
+    def clean(self):
+        if self.cleaned_data['is_product_edited'] is 0 and 'product_name' in self.cleaned_data and self.cleaned_data['product_name']:
+            if Product.objects.filter(product_name__iexact=self.cleaned_data['product_name']).exists():
+                self.add_error('product_name', 'This product is already exist.')
+                raise forms.ValidationError('Product name already exist')
+
+
+class VariantForm(forms.ModelForm):
+    is_variant_edited = forms.IntegerField(
+        widget=forms.NumberInput(attrs={'value': '0', 'id': 'isVariantEdited', 'hidden': True}))
+
+    class Meta:
+        GSM_CHOICES = [
+            ('25', 25),
+            ('30', 30),
+            ('40', 40),
+            ('50', 50),
+            ('60', 60),
+            ('70', 70),
+            ('80', 80),
+            ('90', 90),
+            ('100', 100),
+            ('110', 110)
+        ]
+        model = ProductVariant
+        fields = ['gsm', 'bag_purchase_price', 'marketing_cost', 'transport_cost', 'printing_cost', 'vat', 'profit',
+                  'discount_percent', 'discount_min_purchase', 'category', 'color', 'size', 'stock_total']
+        widgets = {
+            'gsm': Select(attrs={'class': 'form-control', 'id': 'gsm'}),
+            'category': Select(attrs={'class': 'form-control', 'id': 'category'}),
+            'color': Select(attrs={'class': 'form-control', 'id': 'color'}),
+            'size': Select(attrs={'class': 'form-control', 'id': 'size'}),
+            'bag_purchase_price': NumberInput(attrs={'class': 'form-control'}),
+            'marketing_cost': NumberInput(attrs={'class': 'form-control'}),
+            'transport_cost': NumberInput(attrs={'class': 'form-control'}),
+            'printing_cost': NumberInput(attrs={'class': 'form-control'}),
+            'vat': NumberInput(attrs={'class': 'form-control'}),
+            'profit': NumberInput(attrs={'class': 'form-control'}),
+            'discount_percent': NumberInput(attrs={'class': 'form-control'}),
+            'discount_min_purchase': NumberInput(attrs={'class': 'form-control'}),
+            'stock_total': NumberInput(attrs={'class': 'form-control'})
+        }
+
+    def clean(self):
+        if 'is_variant_edited' in self.cleaned_data and self.cleaned_data['is_variant_edited'] is 0:
+            if ProductVariant.objects.filter(color=self.cleaned_data['color'], size=self.cleaned_data['size'],
+                                             gsm=self.cleaned_data['gsm'],
+                                             category=self.cleaned_data['category']).exists():
+                raise forms.ValidationError('Variant is already exist')
+
+
+class NewStockForm(forms.Form):
+    supplier = forms.ModelChoiceField(queryset=Supplier.objects.all(),
+                                      widget=forms.Select(attrs={'class': 'form-control'}))
+    new_stock = forms.IntegerField(widget=forms.NumberInput(attrs={'class': 'form-control'}))
 
 
 class AddNewProductForm(forms.Form):
@@ -110,6 +181,11 @@ class AddNewProductForm(forms.Form):
 
 
 class AddNewSupplierForm(ModelForm):
+    supplier_id = forms.IntegerField(required=False,
+                                     widget=forms.NumberInput(attrs={'class': 'form-control',
+                                                                     'hidden': True, 'value': 0,
+                                                                     'id': 'supplierId'}))
+
     class Meta:
         model = Supplier
         fields = ['name', 'mobile_no', 'address']
@@ -117,14 +193,15 @@ class AddNewSupplierForm(ModelForm):
             'name': TextInput(attrs={'class': 'form-control', 'id': 'fullname', 'placeholder': 'Supplier Name',
                                      'oninput': 'showName()', 'autofocus': True, 'required': True}),
             'mobile_no': NumberInput(attrs={'class': 'form-control', 'type': 'number', 'placeholder': 'Mobile No',
-                                            'required': True}),
+                                            'required': True, 'maxlength': 11}),
             'address': Textarea(attrs={'class': 'form-control', 'placeholder': 'Address', 'required': True, }),
         }
 
     def clean(self):
         """If need more validation than default form validation. Then extend this method."""
 
-        if 'mobile_no' in self.cleaned_data and self.cleaned_data['mobile_no']:
+        if 'mobile_no' in self.cleaned_data and self.cleaned_data['mobile_no'] \
+                and 'supplier_id' in self.cleaned_data and self.cleaned_data['supplier_id'] is 0:
             if Supplier.objects.filter(mobile_no=self.cleaned_data['mobile_no']).exists():
                 self.add_error('mobile_no', 'This mobile no is already exist.')
                 raise forms.ValidationError('This mobile no is already exist.')
@@ -163,7 +240,8 @@ class OrderForm(forms.Form):
             raise forms.ValidationError("Customer phone field is required")
 
         if all(k in self.cleaned_data for k in ['customer_name', 'customer_phone']):
-            if 'customer' in self.cleaned_data and self.cleaned_data['customer_name'] and self.cleaned_data['customer_phone']:
+            if 'customer' in self.cleaned_data and self.cleaned_data['customer_name'] and self.cleaned_data[
+                'customer_phone']:
                 del self.cleaned_data['customer']
             if Customer.objects.filter(customer_phone=self.cleaned_data['customer_phone']).exists():
                 self.add_error('customer_phone', 'This phone no is already exist.')

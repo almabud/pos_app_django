@@ -23,6 +23,8 @@
     <link href="{% static '/common/css/jquery.datepicker2.css' %}" rel="stylesheet"/>
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.css">
 
+    <link href="{% static '/common/css/sr.css' %}" rel="stylesheet"/>
+    <link href="{% static '/common/css/spinner.css' %}" rel="stylesheet"/>
     <link href="{% static '/common/css/custom.css' %}" rel="stylesheet"/>
     {% block add_custom_css %} {% endblock %}
     <!-- CSS Just for demo purpose, don't include it in your project -->
@@ -30,26 +32,46 @@
 
 <body class="">
 {% block container %} {% endblock %}
+<div class="toast" id="mainToast" style="position: absolute; top: 6px; right: 11px; z-index: 10000;">
+    <div class="toast-body" id="toastText">
+
+    </div>
+</div>
+
 <!--   Core JS Files   -->
 <script src="{% static 'common/js/core/jquery.min.js' %}"></script>
 <script src="{% static 'common/js/core/popper.min.js' %}"></script>
 <script src="{% static 'common/js/core/bootstrap.min.js' %}"></script>
 <script src="{% static 'common/js/plugins/perfect-scrollbar.jquery.min.js' %}"></script>
-<!--  Google Maps Plugin    -->
-<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_KEY_HERE"></script>
+
 <!-- Chart JS -->
 <script src="{% static 'common/js/plugins/chartjs.min.js' %}"></script>
 <!--  Notifications Plugin    -->
 <script src="{% static 'common/js/plugins/bootstrap-notify.js' %}"></script>
 <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
 <!-- Control Center for Now Ui Dashboard: parallax effects, scripts for the example pages etc -->
-<script src="{% static 'common/js/paper-dashboard.min.js' %}" type="text/javascript"></script>
+<script src="{% static 'common/js/paper-dashboard.js' %}" type="text/javascript"></script>
 <script src="{% static '/common/js/plugins/jquery.datepicker2.min.js' %}"></script>
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.js"></script>
 <!-- Paper Dashboard DEMO methods, don't include it in your project! -->
 {% block add_new_js %} {% endblock %}
 <script>
+    function showToast(msg, background) {
+        if (background == 'error') {
+            background = 'toast-background-error';
+        } else if(background == 'success') {
+            background = 'toast-background-success';
+        }
+        $('#mainToast').addClass(background);
+        $('#toastText').text(msg);
+        $('#mainToast').toast('show');
+
+    }
+
     $(document).ready(function () {
+        $('#mainToast').toast({
+            delay: 2000
+        });
         // Javascript method's body can be found in assets/assets-for-demo/js/demo.js
         {#demo.initChartsPages();#}
     });

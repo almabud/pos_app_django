@@ -111,3 +111,15 @@
 .display-block{
     display: block !important;
 }
+.min-width-120{
+    min-width: 120px !important;
+}
+
+.toast-background-error{
+    background: rgba(247, 28, 28, 0.72);
+    color: white;
+}
+.toast-background-success{
+    background: green;
+    color: white;
+}

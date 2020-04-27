@@ -82,7 +82,7 @@
                 <div class="card-header">
                     <div class="row">
                         <div class="col-md-9 col-12 text-center text-md-left">
-                            <h5 class="card-title">Payment History</h5>
+                            <h5 class="card-title">Order Info</h5>
                         </div>
                         <div class="col-md-3 col-12">
                             <div class="row">
@@ -101,7 +101,6 @@
 
                         </div>
                     </div>
-                    <h5 class="card-title">Order Info</h5>
                     <hr style="margin:0px !important;">
                 </div>
 
@@ -133,7 +132,7 @@
                                             <td>{{ item.product.gsm }}</td>
                                             <td>{{ item.product.size }}</td>
                                             <td>{{ item.product.color }}</td>
-                                            <td>{{ item.price_per_product }}</td>
+                                            <td>{{ item.price_per_product|floatformat:3 }}</td>
                                             <td>{{ item.discount_percent }}</td>
                                             <td>{{ item.quantity }}</td>
                                             <td class="text-right">{{ item.sub_total|floatformat:3 }}</td>
@@ -252,7 +251,16 @@
         </div>
     </div>
     {% block add_new_js %}
-        <script src="{% static  '/product/js/product.custom.js' %}"></script>
+        <script src="{% static  '/product/js/check_field_error.js' %}"></script>
+         <script src="{% static  '/product/js/create_invoice.js' %}"></script>
+           <script>
+            $(document).ready(function () {
+                initDatatable();
+                preventAutoFormSubmission();
+                checkFieldError();
+                /*------------*/
+            });
+        </script>
     {% endblock %}
 {% endblock %}
 

@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.core.exceptions import PermissionDenied, ImproperlyConfigured
+from django.http import JsonResponse
 from django.shortcuts import redirect
 
 
@@ -24,8 +25,6 @@ class LoggedOutRequiredMixin(UserPassesTestMixin):
 
     def handle_no_permission(self):
         """If test_fun return false then redirect to another page"""
-
         if self.raise_exception:
             raise PermissionDenied(self.get_permission_denied_message())
         return redirect(self.get_redirect_url())
-

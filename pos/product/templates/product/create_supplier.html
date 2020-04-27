@@ -21,6 +21,7 @@
                                         {% endif %}
                                     </label>
                                     {{ form.name }}
+                                    {{ form.supplier_id }}
                                 </div>
                             </div>
                         </div>
@@ -37,7 +38,7 @@
                                 </div>
                             </div>
                         </div>
-                    <div class="row">
+                        <div class="row">
                             <div class="col-md-12">
                                 <div class="form-group">
                                     <label>Supplier Address
@@ -63,7 +64,15 @@
     </form>
 
     {% block add_new_js %}
-        <script src="{% static '/product/js/product.custom.js' %}"></script>
+        <script src="{% static '/product/js/check_field_error.js' %}"></script>
+        <script>
+            $(document).ready(function () {
+                initDatatable();
+                preventAutoFormSubmission();
+                checkFieldError();
+                /*------------*/
+            });
+        </script>
     {% endblock %}
 {% endblock %}
 
