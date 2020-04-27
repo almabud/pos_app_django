@@ -46,18 +46,19 @@ class Product(models.Model):
 
 class ProductVariant(models.Model):
     GSM_CHOICES = [
-        ('25', 25),
-        ('30', 30),
-        ('40', 40),
-        ('50', 50),
-        ('60', 60),
-        ('70', 70),
-        ('80', 80),
-        ('90', 90),
-        ('100', 100),
-        ('110', 110)
+        (None, '----'),
+        ('25 GSM', 25),
+        ('30 GSM', 30),
+        ('40 GSM', 40),
+        ('50 GSM', 50),
+        ('60 GSM', 60),
+        ('70 GSM', 70),
+        ('80 GSM', 80),
+        ('90 GSM', 90),
+        ('100 GSM', 100),
+        ('110 GSM', 110)
     ]
-    gsm = models.CharField(max_length=4, choices=GSM_CHOICES)
+    gsm = models.CharField(max_length=8, choices=GSM_CHOICES, null=True, blank=True)
     bag_purchase_price = models.FloatField(default=0.0)
     marketing_cost = models.FloatField(default=0.0)
     transport_cost = models.FloatField(default=0.0)
@@ -67,7 +68,7 @@ class ProductVariant(models.Model):
     discount_percent = models.IntegerField(default=0)
     discount_min_purchase = models.IntegerField(default=0)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    color = models.ForeignKey(Color, related_name='product_color', on_delete=models.CASCADE)
+    color = models.ForeignKey(Color, related_name='product_color', on_delete=models.CASCADE, null=True, blank=True)
     size = models.ForeignKey(Size, related_name='product_size', on_delete=models.CASCADE)
     stock_total = models.IntegerField(default=0)
     product = models.ForeignKey(Product, related_name='variant', on_delete=models.CASCADE)
@@ -75,7 +76,7 @@ class ProductVariant(models.Model):
     objects = ProductVariantManager()
 
     class Meta:
-        unique_together = ('color', 'size', 'product', 'gsm', 'category')
+        unique_together = ('size', 'product', 'category')
 
     # def __str__(self):
     #     return self.product.product_name

@@ -190,16 +190,16 @@
                                     {% if product.product_variant %}
                                         <tr id="invoice-parent-row-{{ variant.id }}" class="product_item"
                                             onclick="addInvoiceItem({
-                                                    product_name: '{{ variant.product.product_name }}',
-                                                    variant_id: '{{ variant.id }}',
-                                                    category: '{{ variant.category.category }}',
-                                                    color: '{{ variant.color.color }}',
-                                                    size: '{{ variant.size.size }}',
-                                                    gsm: '{{ variant.gsm }}',
-                                                    price: '{{ variant.price|floatformat:3 }}',
-                                                    stock_total: '{{ variant.stock_total }}',
-                                                    discount_percent: '{{ variant.discount_percent }}',
-                                                    discount_min_purchase: '{{ variant.discount_min_purchase }}'
+                                                    product_name: `{{ variant.product.product_name }}`,
+                                                    variant_id: `{{ variant.id }}`,
+                                                    category: `{{ variant.category.category }}`,
+                                                    color: `{{ variant.color.color }}`,
+                                                    size: `{{ variant.size.size }}`,
+                                                    gsm: `{{ variant.gsm }}`,
+                                                    price: `{{ variant.price|floatformat:3 }}`,
+                                                    stock_total: `{{ variant.stock_total }}`,
+                                                    discount_percent: `{{ variant.discount_percent }}`,
+                                                    discount_min_purchase: `{{ variant.discount_min_purchase }}`
                                                     }, $(this))" style="cursor: pointer;">
                                             <td>{{ variant.id }}</td>
                                             <td>{{ product.product_name }}</td>

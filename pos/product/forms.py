@@ -19,7 +19,8 @@ class ProductForm(forms.ModelForm):
         }
 
     def clean(self):
-        if self.cleaned_data['is_product_edited'] is 0 and 'product_name' in self.cleaned_data and self.cleaned_data['product_name']:
+        if self.cleaned_data['is_product_edited'] is 0 and 'product_name' in self.cleaned_data and self.cleaned_data[
+            'product_name']:
             if Product.objects.filter(product_name__iexact=self.cleaned_data['product_name']).exists():
                 self.add_error('product_name', 'This product is already exist.')
                 raise forms.ValidationError('Product name already exist')
@@ -30,18 +31,6 @@ class VariantForm(forms.ModelForm):
         widget=forms.NumberInput(attrs={'value': '0', 'id': 'isVariantEdited', 'hidden': True}))
 
     class Meta:
-        GSM_CHOICES = [
-            ('25', 25),
-            ('30', 30),
-            ('40', 40),
-            ('50', 50),
-            ('60', 60),
-            ('70', 70),
-            ('80', 80),
-            ('90', 90),
-            ('100', 100),
-            ('110', 110)
-        ]
         model = ProductVariant
         fields = ['gsm', 'bag_purchase_price', 'marketing_cost', 'transport_cost', 'printing_cost', 'vat', 'profit',
                   'discount_percent', 'discount_min_purchase', 'category', 'color', 'size', 'stock_total']
@@ -63,8 +52,7 @@ class VariantForm(forms.ModelForm):
 
     def clean(self):
         if 'is_variant_edited' in self.cleaned_data and self.cleaned_data['is_variant_edited'] is 0:
-            if ProductVariant.objects.filter(color=self.cleaned_data['color'], size=self.cleaned_data['size'],
-                                             gsm=self.cleaned_data['gsm'],
+            if ProductVariant.objects.filter(size=self.cleaned_data['size'],
                                              category=self.cleaned_data['category']).exists():
                 raise forms.ValidationError('Variant is already exist')
 
@@ -77,6 +65,7 @@ class NewStockForm(forms.Form):
 
 class AddNewProductForm(forms.Form):
     GSM_CHOICES = [
+        (None, '----'),
         ('25', 25),
         ('30', 30),
         ('40', 40),
@@ -93,7 +82,7 @@ class AddNewProductForm(forms.Form):
     new_product_name = forms.CharField(required=False,
                                        widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'product_input',
                                                                      'placeholder': 'Enter Product Name eg. Handle Bag'}))
-    gsm = forms.ChoiceField(choices=GSM_CHOICES, widget=forms.Select(attrs={'class': 'form-control'}))
+    gsm = forms.ChoiceField(required=False, choices=GSM_CHOICES, widget=forms.Select(attrs={'class': 'form-control'}))
     product_description = forms.CharField(required=False, widget=forms.Textarea(attrs={'class': 'form-control'}))
     bag_purchase_price = forms.DecimalField(widget=forms.NumberInput(attrs={'class': 'form-control'}))
     marketing_cost = forms.DecimalField(widget=forms.NumberInput(attrs={'class': 'form-control'}))
@@ -160,9 +149,6 @@ class AddNewProductForm(forms.Form):
                 raise forms.ValidationError('This color is already exist.')
             del self.cleaned_data['color']
         else:
-            if 'color' not in self.cleaned_data or not self.cleaned_data['color']:
-                # self.add_error('color', 'This field can\'t be empty')
-                raise forms.ValidationError('Color field can\'t be empty')
             del self.cleaned_data['new_color']
 
         if 'new_size' in self.cleaned_data and self.cleaned_data['new_size']:

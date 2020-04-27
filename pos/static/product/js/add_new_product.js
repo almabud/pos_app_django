@@ -59,7 +59,7 @@ function initColor() {
     $('#color_input').hide();
     $('#color_select').show();
     $('#new_color').show();
-    $('#color_select').attr('required', true);
+    // $('#color_select').attr('required', true);
     $('#color_input').attr('required', false);
 
     $('#new_color').click(() => {
@@ -68,7 +68,7 @@ function initColor() {
         $('#color_select').hide();
         $('#color_input').show();
         $('#color_input').attr('required', true);
-        $('#color_select').attr('required', false);
+        // $('#color_select').attr('required', false);
     });
 
     $('#cancel_color').click(() => {

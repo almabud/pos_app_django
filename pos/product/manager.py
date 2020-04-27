@@ -87,9 +87,7 @@ class ProductManager(models.Manager):
         if 'product' in fields:
             keys = [
                 'product',
-                'color',
                 'size',
-                'gsm',
                 'category',
                 'marketing_cost',
                 'vat',
@@ -113,7 +111,7 @@ class ProductManager(models.Manager):
             return product
         else:
             raise ValueError(
-                'Product name, color, size, gsm, category, marketing cost, vat, bag purchase price, transport cost, '
+                'Product name, size, category, marketing cost, vat, bag purchase price, transport cost, '
                 'stock total, profit can\t be empty')
 
     def update_product(self, id, data):
