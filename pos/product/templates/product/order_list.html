@@ -3,53 +3,113 @@
 {% block content %}
     <link href="{% static '/product/css/product.css' %}" rel="stylesheet"/>
     <div class="row product_list">
-    <div class="col col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="card-title text-center text-md-left"> All Orders </h4>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive product_list_table">
-                    <table class="table table-hover" id="product_list">
-                        <thead class=" text-primary">
-                        <th>ID</th>
-                        <th>Date</th>
-                        <th>Customer Name</th>
-                        <th>Sold by</th>
-                        <th>Total item</th>
-                        <th class="text-right">Total billed</th>
-                        <th class="text-right">Total paid</th>
-                        <th class="text-right">Total Due(BDT)</th>
-                        </thead>
-                        <tbody>
-                        {% for order in order_list %}
-                            <tr onclick="redirect_new_page('{% url 'product:order_details' order.id %}')" style="cursor: pointer !important;">
-                              <a href="{% url 'product:order_details' order.id %}">  <td>{{ order.id }}</td>
-                                <td>{{ order.ordered_date|date:'d/m/Y h:i A' }}</td>
-                                <td>{{ order.customer.customer_name }}</td>
-                                <td>{{ order.sold_by.name }}</td>
-                                <td>{{ order.total_item }}</td>
-                                <td class="text-right">{{ order.total_billed|floatformat:3 }}</td>
-                                <td class="text-right">{{ order.paid_total|floatformat:3 }}</td>
-                                <td class="text-right">{{ order.total_due|floatformat:3 }}</td>
-                                   </a>
-                            </tr>
-
-                        {% endfor %}
-                        </tbody>
-                    </table>
+        <div class="col col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title text-center text-md-left"> All Orders </h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive product_list_table">
+                        <table class="table table-hover" id="product_list">
+                            <thead class=" text-primary">
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Customer Name</th>
+                            <th>Sold by</th>
+                            <th>Total item</th>
+                            <th class="text-right">Total billed</th>
+                            <th class="text-right">Total paid</th>
+                            <th class="text-right">Total Due(BDT)</th>
+                            </thead>
+                            <tbody>
+                            {% for order in order_list %}
+                                <tr class="orderRow"
+                                    onclick="redirect_new_page('{% url 'product:order_details' order.id %}')"
+                                    style="cursor: pointer !important;" data-order-id='{{ order.id }}'>
+                                    <a href="{% url 'product:order_details' order.id %}">
+                                        <td>{{ order.id }}</td>
+                                        <td>{{ order.ordered_date|date:'d/m/Y h:i A' }}</td>
+                                        <td>{{ order.customer.customer_name }}</td>
+                                        <td>{{ order.sold_by.name }}</td>
+                                        <td>{{ order.total_item }}</td>
+                                        <td class="text-right">{{ order.total_billed|floatformat:3 }}</td>
+                                        <td class="text-right">{{ order.paid_total|floatformat:3 }}</td>
+                                        <td class="text-right">{{ order.total_due|floatformat:3 }}</td>
+                                    </a>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
+        {% csrf_token %}
     </div>
-    {% block add_new_js %}
-           <script>
-            $(document).ready(function () {
-                initDatatable();
-                preventAutoFormSubmission();
-                /*------------*/
+{% endblock %}
+
+{% block outside_wrapper %}
+    <ul class="ContextMenu ContextMenu--theme-default" id="contextMenu" data-contextmenu="0" tabindex="-1">
+        <li class="ContextMenu-item" tabindex="0" id="orderDeleteBtn"
+            onclick="confirmDelete()" data-order-id="-1" data-delete-row>
+            <i class="fa fa-minus-circle context-menu-icon"></i>
+            <strong style="margin-left: 20px;">Delete</strong>
+        </li>
+    </ul>
+{% endblock %}
+{% block add_new_js %}
+    <script>
+        function orderListContextMenu() {
+            $('.orderRow').on('contextmenu', function (e) {
+                e.preventDefault();
+                $('#contextMenu').css({
+                    top: e.pageY + 'px',
+                    left: e.pageX + 'px'
+                }).addClass('is-open');
+                var orderId = $(this).data('orderId');
+                $('#orderDeleteBtn').data('orderId', orderId);
+                $('#orderDeleteBtn').data('deleteRow', this);
+            })
+        }
+
+        function deleteOrder() {
+            var id = $('#orderDeleteBtn').data('orderId');
+            var deleteRow = $('#orderDeleteBtn').data('deleteRow');
+            var dataTable = $('#product_list').DataTable();
+            $.ajax({
+                url: window.location.href,
+                type: 'POST',
+                data: {
+                    csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+                    order_id: id
+                },
+                success: function (data, textStatus, jqXHR) {
+                    dataTable.row($(deleteRow)).remove().draw();
+                    showToast('Order has been deleted', 'success');
+                },
+                error: function (data, textStatus, jqXHR) {
+                    showToast('Order can\'t be deleted', 'error');
+                }
             });
-        </script>
-    {% endblock %}
+        }
+
+        function confirmDelete() {
+            var action = confirm('Do yo really want to delete this order??');
+            if(action){
+                deleteOrder();
+            }
+
+        }
+
+        $(document).ready(function () {
+            initDatatable();
+            preventAutoFormSubmission();
+            /*------------*/
+            orderListContextMenu();
+            $(document).click(function () {
+                $('#contextMenu').removeClass('is-open');
+            });
+        });
+    </script>
 {% endblock %}
 

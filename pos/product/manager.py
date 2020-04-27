@@ -38,7 +38,8 @@ class ProductManager(models.Manager):
                          'OrderedItem_variants',
                      )
                      .annotate(price=F('bag_purchase_price') + F('marketing_cost') + F('vat') + F('printing_cost')
-                                     + F('transport_cost') + F('profit')).annotate(total_order=Count('OrderedItem_variants')).order_by('-stock_total'),
+                                     + F('transport_cost') + F('profit')).annotate(
+                         total_order=Count('OrderedItem_variants')).order_by('-stock_total'),
                      to_attr="product_variant")) \
             .annotate(total_stock=Sum('variant__stock_total')).order_by('-total_stock')
         return data
@@ -160,7 +161,8 @@ class ProductVariantManager(models.Manager):
         except DatabaseError as e:
             raise DatabaseError("Adding new stock problem in database")
         try:
-            supplier = SupplierTransaction(supplier=form_data['supplier'], product=old_variant, total_supplied=form_data['new_stock'])
+            supplier = SupplierTransaction(supplier=form_data['supplier'], product=old_variant,
+                                           total_supplied=form_data['new_stock'])
             supplier.save(using=self.db)
         except DatabaseError as e:
             raise DatabaseError("Adding supplier info problem in database")
@@ -377,3 +379,13 @@ class OrderManager(models.Manager):
         except DatabaseError as e:
             raise DatabaseError("Database technical issue")
         return new_payment
+
+    @transaction.atomic
+    def delete_order(self, id):
+        if id is None:
+            raise ValueError("Id is required")
+        try:
+            self.model.objects.get(id=id).delete()
+        except DatabaseError as e:
+            raise DatabaseError("Technical problem to delete order")
+        return True

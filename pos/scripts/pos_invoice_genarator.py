@@ -10,7 +10,7 @@ def generate_pos_invoice(order_details):
         """.format(
             item.product.product.product_name,
             item.product.size.size,
-            item.product.color.color,
+            item.product.color.color if item.product.color else '',
             item.product.gsm,
             item.product.category.category,
             item.quantity,

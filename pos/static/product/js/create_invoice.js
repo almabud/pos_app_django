@@ -64,6 +64,8 @@ function onChangeQuantity(quantityField) {
             $($tds[7]).find('input').attr('value', discount);
             $($tds[7]).find('span').text(discount);
         } else {
+             $($tds[7]).find('input').attr('value', 0);
+            $($tds[7]).find('span').text(0);
             subTotal = (quantity * price).toFixed(3);
         }
         $($tds[9]).text(subTotal);

@@ -169,6 +169,17 @@ class OrderList(View):
     def get(self, request):
         return render(request, 'product/order_list.html', {"order_list": Order.objects.get_all_order()})
 
+    def post(self, request):
+        if request.is_ajax():
+            id = request.POST['order_id']
+            if id:
+                if Order.objects.delete_order(id):
+                    return JsonResponse('success', status=200, safe=False)
+                else:
+                    return JsonResponse('error', status=400, safe=False)
+            else:
+                return JsonResponse('error', status=400, safe=False)
+
 
 class CreateInvoice(TemplateView):
     template_name = 'product/create_invoice.html'
