@@ -239,11 +239,13 @@ class OrderDetail(TemplateView):
                         return JsonResponse('error', status=400, safe=False)
                 else:
                     return JsonResponse('error', status=400, safe=False)
-            elif 'order_item_id' in request.POST:
-                id = request.POST['payment_id']
+            elif 'item_id' in request.POST:
+                id = request.POST['item_id']
                 if id:
-                    if Order.objects.delete_order(id):
-                        return JsonResponse('success', status=200, safe=False)
+                    if Order.objects.delete_ordered_item(id):
+                        order_details = Order.objects.get_order_detail(order_id=order_id)
+                        pos_invoice = generate_pos_invoice(order_details)
+                        return JsonResponse(pos_invoice, status=200, safe=False)
                     else:
                         return JsonResponse('error', status=400, safe=False)
                 else:

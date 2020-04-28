@@ -127,7 +127,8 @@
                                     </thead>
                                     <tbody id="invoiceTableBody">
                                     {% for item in order_details.items %}
-                                        <tr>
+                                        <tr class="invoiceRow" data-id='{{ item.id }}'
+                                            data-amount='{{ item.sub_total }}'>
                                             <td>{{ item.product.id }}</td>
                                             <td>{{ item.product.product.product_name }}</td>
                                             <td>{{ item.product.category }}</td>
@@ -148,7 +149,8 @@
                                     <tbody>
                                     <tr>
                                         <td class="text-right">Grand Total =</td>
-                                        <td class="text-right">{{ order_details.total_billed|floatformat:3 }}</td>
+                                        <td class="text-right"
+                                            id="grandTotalTxt">{{ order_details.total_billed|floatformat:3 }}</td>
                                     </tr>
                                     <tr>
                                         <td class="text-right">Total due =</td>
@@ -258,9 +260,10 @@
         </div>
     </div>
     <!--Modal End-->
-    <ul class="ContextMenu ContextMenu--theme-default" id="paymentContextMenu" data-contextmenu="0" tabindex="-1">
-        <li class="ContextMenu-item" tabindex="0" id="paymentDeleteBtn"
-            onclick="confirmDelete('payment')" data-payment-id="-1" data-delete-row data-amount="0">
+    <ul class="ContextMenu ContextMenu--theme-default" id="contextMenu" data-contextmenu="0" tabindex="-1">
+        <li class="ContextMenu-item" tabindex="0" id="deleteBtn"
+            onclick="confirmDelete()" data-payment-id="-1" data-item-id="-1" data-delete-row data-amount="0"
+            data-delete-type="payment">
             <i class="fa fa-minus-circle context-menu-icon"></i>
             <strong style="margin-left: 20px;">Delete</strong>
         </li>
@@ -271,16 +274,6 @@
     <script src="{% static  '/product/js/create_invoice.js' %}"></script>
     <script src="{% static  '/product/js/ajax_request.js' %}"></script>
     <script>
-        function OrderItemsCount() {
-            $(document).bind('DOMSubtreeModified', '#invoiceTableBody', function () {
-                if ($('#invoiceTableBody').children().length <= 1) {
-                    $('#invoice_empty_msg').css('display', 'contents');
-                } else {
-                    $('#invoice_empty_msg').css('display', 'none');
-                }
-            })
-        }
-
         function amountChange() {
             var inputItem = $('input[name="amount"]');
             var max = parseFloat(inputItem.attr('max'));
@@ -292,31 +285,47 @@
 
         }
 
+        function invoiceListContextMenu() {
+            $('.invoiceRow').on('contextmenu', function (e) {
+                if ($('#invoiceTableBody').children().length > 1) {
+                    e.preventDefault();
+                    $('#contextMenu').css({
+                        top: e.pageY + 'px',
+                        left: e.pageX + 'px'
+                    }).addClass('is-open');
+                    var itemId = $(this).data('id');
+                    var amount = $(this).data('amount')
+                    $('#deleteBtn').data('itemId', itemId);
+                    $('#deleteBtn').data('deleteRow', this);
+                    $('#deleteBtn').data('deleteType', 'item');
+                    $('#deleteBtn').data('amount', amount);
+                }
+            });
+        }
+
         function paymentListContextMenu() {
             $('.paymentList').on('contextmenu', function (e) {
                 e.preventDefault();
-                $('#paymentContextMenu').css({
+                $('#contextMenu').css({
                     top: e.pageY + 'px',
                     left: e.pageX + 'px'
                 }).addClass('is-open');
                 var paymentId = $(this).data('paymentId');
                 var amount = $(this).data('amount')
-                $('#paymentDeleteBtn').data('paymentId', paymentId);
-                $('#paymentDeleteBtn').data('deleteRow', this);
-                $('#paymentDeleteBtn').data('amount', amount);
-            });
-            $(document).click(function () {
-                $('#paymentContextMenu').removeClass('is-open');
+                $('#deleteBtn').data('paymentId', paymentId);
+                $('#deleteBtn').data('deleteRow', this);
+                $('#deleteBtn').data('deleteType', 'payment');
+                $('#deleteBtn').data('amount', amount);
             });
         }
 
         function paymentDeleteSuccess(data, textStatus, jqXHR) {
 
             $('#posPrintBtn').attr('onClick', 'printPosInvoice(`' + data + '`)');
-            var deleteRow = $('#paymentDeleteBtn').data('deleteRow');
+            var deleteRow = $('#deleteBtn').data('deleteRow');
             var totalDue = parseFloat($('#totalDueTxt').text());
             var paidTotal = parseFloat($('#paidTotalTxt').text());
-            var paidAmount = parseFloat($('#paymentDeleteBtn').data('amount'));
+            var paidAmount = parseFloat($('#deleteBtn').data('amount'));
             $('#totalDueTxt').text((totalDue + paidAmount).toFixed(3));
             $('#paidTotalTxt').text((paidTotal - paidAmount).toFixed(3));
             $('input[name="amount"]').attr('max', (totalDue + paidAmount));
@@ -324,19 +333,47 @@
             showToast('Payment has been deleted', 'success');
         }
 
-        function paymentDeleteError() {
+        function paymentDeleteError(data, textStatus, jqXHR) {
             showToast('Error Deleting payment history', 'error');
         }
 
         function paymentDelete() {
-            var paymentId = $('#paymentDeleteBtn').data('paymentId');
+            var paymentId = $('#deleteBtn').data('paymentId');
             ajaxRequest({
                 csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
                 payment_id: paymentId
             }, 'paymentDelete');
         }
 
-        function confirmDelete(type) {
+        function itemDeleteSuccess(data, textStatus, jqXHR) {
+            $('#posPrintBtn').attr('onClick', 'printPosInvoice(`' + data + '`)');
+            var deleteRow = $('#deleteBtn').data('deleteRow');
+            var grandTotal = parseFloat($('#grandTotalTxt').text());
+            var totalDue = parseFloat($('#totalDueTxt').text());
+            var paidTotal = parseFloat($('#paidTotalTxt').text());
+            var deletedAmount = parseFloat($('#deleteBtn').data('amount'));
+            grandTotal = grandTotal - deletedAmount;
+            $('#grandTotalTxt').text(grandTotal.toFixed(3));
+            $('#totalDueTxt').text((grandTotal - paidTotal).toFixed(3));
+            $('input[name="amount"]').attr('max', (grandTotal - paidTotal));
+            $(deleteRow).remove();
+            showToast('Item has been deleted', 'success');
+        }
+
+        function itemDeleteError(data, textStatus, jqXHR) {
+            showToast('Error occurred while deleting item', 'error');
+        }
+
+        function itemDelete() {
+            var itemId = $('#deleteBtn').data('itemId');
+            ajaxRequest({
+                csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+                item_id: itemId
+            }, 'itemDelete');
+        }
+
+        function confirmDelete() {
+            var type = $('#deleteBtn').data('deleteType');
             var action = confirm('Do you really want to delete this ' + type + '!!');
             if (action) {
                 window[type + 'Delete']()
@@ -349,6 +386,10 @@
             checkFieldError();
             /*------------*/
             paymentListContextMenu();
+            invoiceListContextMenu();
+            $(document).click(function () {
+                $('#contextMenu').removeClass('is-open');
+            });
 
         });
     </script>

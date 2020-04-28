@@ -268,7 +268,8 @@ class OrderManager(models.Manager):
         data = self.model.objects.filter(pk=order_id).prefetch_related(
             Prefetch('ordered_items',
                      queryset=OrderedItem.objects.annotate(
-                         sub_total=ExpressionWrapper(F('quantity') * F('price_per_product'), output_field=FloatField()))
+                         sub_total=ExpressionWrapper(F('quantity') * F('price_per_product') * (
+                         Value(1) - (F('discount_percent') / 100.00)), output_field=FloatField()))
                      .select_related('product', 'product__product', 'product__category', 'product__color',
                                      'product__size'),
                      to_attr='items'
@@ -393,13 +394,13 @@ class OrderManager(models.Manager):
                     to_attr='items'
                 )
             ).first()
-
             product_variant = []
             for item in order.items:
                 item.product.stock_total = item.product.stock_total + item.quantity
                 product_variant.append(item.product)
             from product.models import ProductVariant
             ProductVariant.objects.bulk_update(product_variant, ['stock_total'])
+            order.delete()
         except DatabaseError as e:
             raise DatabaseError("Technical problem to delete order")
         return True
@@ -417,4 +418,21 @@ class OrderManager(models.Manager):
             payment.delete()
         except DatabaseError as e:
             raise DatabaseError("Technical problem to delete order")
+        return True
+
+    @transaction.atomic
+    def delete_ordered_item(self, id):
+        if id is None:
+            raise ValueError("Item Id is required")
+        try:
+            from product.models import OrderedItem
+            item = OrderedItem.objects.get(id=id)
+            if OrderedItem.objects.filter(order=item.order).count() <= 1:
+                raise ValidationError('This order can not be deleted as a order need at least 1 item.')
+            product_variant = item.product
+            product_variant.stock_total = product_variant.stock_total + item.quantity
+            product_variant.save(using=self.db)
+            item.delete()
+        except DatabaseError as e:
+            raise DatabaseError("Technical problem raised while deleting item")
         return True
