@@ -35,11 +35,11 @@ class ProductManager(models.Manager):
         data = self.model.objects.prefetch_related(
             Prefetch("variant",
                      queryset=ProductVariant.objects.select_related('color', 'size', 'category').prefetch_related(
-                         'OrderedItem_variants',
+                         'orderedItem_variants',
                      )
                      .annotate(price=F('bag_purchase_price') + F('marketing_cost') + F('vat') + F('printing_cost')
                                      + F('transport_cost') + F('profit')).annotate(
-                         total_order=Count('OrderedItem_variants')).order_by('-stock_total'),
+                         total_order=Count('orderedItem_variants')).order_by('-stock_total'),
                      to_attr="product_variant")) \
             .annotate(total_stock=Sum('variant__stock_total')).order_by('-total_stock')
         return data
@@ -385,7 +385,21 @@ class OrderManager(models.Manager):
         if id is None:
             raise ValueError("Id is required")
         try:
-            self.model.objects.get(id=id).delete()
+            from product.models import OrderedItem
+            order = self.model.objects.filter(id=id).prefetch_related(
+                Prefetch(
+                    'ordered_items',
+                    queryset=OrderedItem.objects.select_related('product'),
+                    to_attr='items'
+                )
+            ).first()
+
+            product_variant = []
+            for item in order.items:
+                item.product.stock_total = item.product.stock_total + item.quantity
+                product_variant.append(item.product)
+            from product.models import ProductVariant
+            ProductVariant.objects.bulk_update(product_variant, ['stock_total'])
         except DatabaseError as e:
             raise DatabaseError("Technical problem to delete order")
         return True

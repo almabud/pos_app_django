@@ -146,7 +146,7 @@ class PaymentHistory(models.Model):
 
 class OrderedItem(models.Model):
     """This model store products of a particular order """
-    product = models.ForeignKey(ProductVariant, related_name='OrderedItem_variants', on_delete=models.CASCADE)
+    product = models.ForeignKey(ProductVariant, related_name='orderedItem_variants', on_delete=models.CASCADE)
     price_per_product = models.FloatField(default=0.0)
     discount_percent = models.IntegerField(default=0)
     quantity = models.IntegerField(default=0)

@@ -112,7 +112,7 @@
                     <div class="row pt-2">
                         <div class="col-12">
                             <div class="table-responsive table_outside_border">
-                                <table class="table table-hover">
+                                <table class="table table-hover" id="invoiceTable">
                                     <thead class="text-primary">
                                     <th>ID</th>
                                     <th>Product Name</th>
@@ -125,7 +125,7 @@
                                     <th>Quantity</th>
                                     <th class="text-right">Sub Total</th>
                                     </thead>
-                                    <tbody>
+                                    <tbody id="invoiceTableBody">
                                     {% for item in order_details.items %}
                                         <tr>
                                             <td>{{ item.product.id }}</td>
@@ -236,7 +236,8 @@
                             <div class="col-md-12">
                                 <div class="form-group">
                                     <label>Amount</label>
-                                    <input onChange="amountChange()" onkeyup="amountChange()" type="number" min="1.00" name="amount"
+                                    <input onChange="amountChange()" onkeyup="amountChange()" type="number" min="1.00"
+                                           name="amount"
                                            max="{{ order_details.total_due }}"
                                            step=".01"
                                            required class="form-control"
@@ -270,12 +271,22 @@
     <script src="{% static  '/product/js/create_invoice.js' %}"></script>
     <script src="{% static  '/product/js/ajax_request.js' %}"></script>
     <script>
+        function OrderItemsCount() {
+            $(document).bind('DOMSubtreeModified', '#invoiceTableBody', function () {
+                if ($('#invoiceTableBody').children().length <= 1) {
+                    $('#invoice_empty_msg').css('display', 'contents');
+                } else {
+                    $('#invoice_empty_msg').css('display', 'none');
+                }
+            })
+        }
+
         function amountChange() {
             var inputItem = $('input[name="amount"]');
             var max = parseFloat(inputItem.attr('max'));
-            if (inputItem.val()>=max){
+            if (inputItem.val() >= max) {
                 inputItem.val(max.toFixed(3));
-            }else if(inputItem.val()<0){
+            } else if (inputItem.val() < 0) {
                 inputItem.val(0);
             }
 
