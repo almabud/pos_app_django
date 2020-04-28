@@ -25,16 +25,19 @@ def generate_pos_invoice(order_details):
             <td class="payment"><h2>{:.3f}</h2></td>
         </tr>
         <tr class="tabletitle">
-            <td class="Rate"><h2>Date:{:%d-%m-%Y}</h2></td>
+            <td class="Rate"><h2 id="posInvoicePaidDate">Date:{:%d-%m-%Y}</h2></td>
             <td class="Rate"><h2>Paid</h2></td>
-            <td class="payment"><h2>{:.3f}</h2></td>
+            <td class="payment"><h2 id="posInvoicePaid">{:.3f}</h2></td>
         </tr>
          <tr class="tabletitle">
             <td></td>
             <td class="Rate"><h2>Due</h2></td>
-            <td class="payment"><h2>{:.3f}</h2></td>
+            <td class="payment"><h2 id="posInvoiceDue">{:.3f}</h2></td>
         </tr>
-    """.format(order_details.total_billed, order_details.order_payment_history[0].date, order_details.paid_total, order_details.total_due)
+    """.format(order_details.total_billed,
+               order_details.order_payment_history[
+                   0].date if order_details.order_payment_history else order_details.ordered_date,
+               order_details.paid_total, order_details.total_due)
 
     middle_html = item_row + item_end
     invoice_html = get_style() + get_html_first_part() + middle_html + get_html_last_part()

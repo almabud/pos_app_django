@@ -227,6 +227,27 @@ class OrderDetail(TemplateView):
         return super().get_context_data(**kwargs)
 
     def post(self, request, order_id):
+        if request.is_ajax():
+            if 'payment_id' in request.POST:
+                id = request.POST['payment_id']
+                if id:
+                    if Order.objects.delete_payment(id):
+                        order_details = Order.objects.get_order_detail(order_id=order_id)
+                        pos_invoice = generate_pos_invoice(order_details)
+                        return JsonResponse(pos_invoice, status=200, safe=False)
+                    else:
+                        return JsonResponse('error', status=400, safe=False)
+                else:
+                    return JsonResponse('error', status=400, safe=False)
+            elif 'order_item_id' in request.POST:
+                id = request.POST['payment_id']
+                if id:
+                    if Order.objects.delete_order(id):
+                        return JsonResponse('success', status=200, safe=False)
+                    else:
+                        return JsonResponse('error', status=400, safe=False)
+                else:
+                    return JsonResponse('error', status=400, safe=False)
         current_user = request.user
         new_payment = Order.objects.make_payment(order_id, request.POST['amount'], current_user)
         return HttpResponseRedirect(self.request.path_info)

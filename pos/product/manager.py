@@ -389,3 +389,18 @@ class OrderManager(models.Manager):
         except DatabaseError as e:
             raise DatabaseError("Technical problem to delete order")
         return True
+
+    @transaction.atomic
+    def delete_payment(self, id):
+        if id is None:
+            raise ValueError("Id is required")
+        try:
+            from product.models import PaymentHistory
+            payment = PaymentHistory.objects.get(id=id)
+            order = payment.order
+            order.paid_total = order.paid_total - payment.amount
+            order.save(using=self.db)
+            payment.delete()
+        except DatabaseError as e:
+            raise DatabaseError("Technical problem to delete order")
+        return True
