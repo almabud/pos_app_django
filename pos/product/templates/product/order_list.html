@@ -15,6 +15,7 @@
                             <th>ID</th>
                             <th>Date</th>
                             <th>Customer Name</th>
+                            <th>Customer Phone</th>
                             <th>Sold by</th>
                             <th>Total item</th>
                             <th class="text-right">Total billed</th>
@@ -30,6 +31,7 @@
                                         <td>{{ order.id }}</td>
                                         <td>{{ order.ordered_date|date:'d/m/Y h:i A' }}</td>
                                         <td>{{ order.customer.customer_name }}</td>
+                                        <td>{{ order.customer.customer_phone }}</td>
                                         <td>{{ order.sold_by.name }}</td>
                                         <td>{{ order.total_item }}</td>
                                         <td class="text-right">{{ order.total_billed|floatformat:3 }}</td>

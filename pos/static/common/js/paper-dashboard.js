@@ -199,8 +199,8 @@ function redirect_new_page(urlPath) {
     document.location.href = url;
 }
 
-function initDatatable() {
-    $('#product_list').DataTable({
+function initDatatable(id='#product_list') {
+    $(id).DataTable({
         "lengthChange": false,
         "pageLength": 25,
         "order": [],
@@ -208,9 +208,9 @@ function initDatatable() {
             "search": "<span>Search</span>",
         },
     });
-    $('#product_list_filter input[type=search]').addClass('form-control');
-    $('#product_list_filter > label').css({'margin-right': '10px', 'text-align': 'left'});
-    $('#product_list_filter > label > span').css('margin-left', '8px');
+    $(id+'_filter input[type=search]').addClass('form-control');
+    $(id+'_filter > label').css({'margin-right': '10px', 'text-align': 'left'});
+    $(id+'_filter > label > span').css('margin-left', '8px');
 }
 
 function preventAutoFormSubmission() {

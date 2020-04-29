@@ -198,6 +198,38 @@ class AddNewSupplierForm(ModelForm):
         return self.cleaned_data
 
 
+class CustomerForm(ModelForm):
+    is_edited_customer = forms.IntegerField(required=True,
+                                            widget=forms.NumberInput(attrs={'class': 'form-control',
+                                                                            'hidden': True, 'value': 0,
+                                                                            'id': 'isEditedCustomer'}))
+
+    class Meta:
+        model = Customer
+        fields = ['customer_name', 'customer_phone', 'customer_address']
+        widgets = {
+            'customer_name': TextInput(
+                attrs={'class': 'form-control', 'id': 'customerName', 'placeholder': 'Customer Name', }),
+            'customer_phone': NumberInput(
+                attrs={'class': 'form-control', 'type': 'number', 'placeholder': 'Mobile No', 'maxlength': 11}),
+            'customer_address': Textarea(attrs={'class': 'form-control', 'placeholder': 'Address', 'required': True, }),
+        }
+
+    def clean(self):
+        """If need more validation than default form validation. Then extend this method."""
+
+        if 'customer_phone' in self.cleaned_data and self.cleaned_data['customer_phone'] \
+                and 'is_edited_customer' in self.cleaned_data and self.cleaned_data['is_edited_customer'] is 0:
+            if Customer.objects.filter(customer_phone=self.cleaned_data['customer_phone']).exists():
+                self.add_error('customer_phone', 'This mobile no is already exist.')
+                raise forms.ValidationError('This mobile no is already exist.')
+        else:
+            if 'customer_phone' not in self.cleaned_data or not self.cleaned_data['customer_phone']:
+                self.add_error('customer_phone', 'This field can\'t be empty')
+                raise forms.ValidationError('Mobile no field can\'t be empty')
+        return self.cleaned_data
+
+
 class OrderForm(forms.Form):
     customer_name = forms.CharField(required=False, max_length=255, widget=forms.TextInput(
         attrs={'class': 'form-control', 'hidden': True, 'id': 'new_customer_name'}))

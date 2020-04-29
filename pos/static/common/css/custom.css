@@ -123,3 +123,10 @@
     background: green;
     color: white;
 }
+.hover-active:hover{
+    color: blue;
+    text-decoration: underline;
+}
+.cursor-pointer{
+    cursor: pointer !important;
+}

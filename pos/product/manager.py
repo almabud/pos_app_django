@@ -222,25 +222,64 @@ class SupplierTransactionManager(models.Manager):
 
 class CustomerManger(models.Manager):
     def get_all_customer(self):
-        total_billed = self.model.objects.prefetch_related('order_customer', 'order_customer__ordered_items') \
-            .aggregate(
-            total_billed=Sum(
-                (F('order_customer__ordered_items__quantity') * F('order_customer__ordered_items__price_per_product')) *
-                (Value(1) - F('order_customer__ordered_items__discount_percent') / 100.00),
-                output_field=FloatField()
-            ),
-            total_item=Sum(F('order_customer__ordered_items__quantity'), output_field=IntegerField())
-        )
-
         data = self.model.objects.prefetch_related('order_customer', 'order_customer__ordered_items') \
             .annotate(
-            total_due=ExpressionWrapper(
-                Value(total_billed['total_billed']) - Sum(F('order_customer__paid_total'), output_field=FloatField()),
-                output_field=FloatField()),
-            total_item=Value(total_billed['total_item'], output_field=IntegerField())
-        )
+            total_paid=Coalesce(Sum(F('order_customer__paid_total'), output_field=FloatField()), Value(0)),
+            total_billed=Coalesce(Sum(
+                F('order_customer__ordered_items__quantity') * F('order_customer__ordered_items__price_per_product') *
+                (Value(1) - F('order_customer__ordered_items__discount_percent') / 100.00), output_field=FloatField()),
+                Value(0)),
+            total_item=Coalesce(Sum(F('order_customer__ordered_items__quantity')), Value(0))
+        ).annotate(total_due=Coalesce(F('total_billed') - F('total_paid'), Value(0))).order_by('-total_due',
+                                                                                               '-total_item')
 
         return data
+
+    def get_customer_details(self, id):
+        from product.models import Order
+        from product.models import PaymentHistory
+        data = self.model.objects.filter(id=id).prefetch_related(
+            Prefetch(
+                'order_customer',
+                queryset=Order.objects.prefetch_related('ordered_items', Prefetch(
+                    'payment_history',
+                    queryset=PaymentHistory.objects.select_related('received_by').order_by('-date'),
+                    to_attr='payments')).select_related('sold_by').annotate(
+                    billed=Sum(
+                        (F('ordered_items__quantity') * F(
+                            'ordered_items__price_per_product')) *
+                        (Value(1) - F('ordered_items__discount_percent') / 100.00),
+                        output_field=FloatField()
+                    ),
+                    items=Count('ordered_items')
+
+                ).annotate(
+                    due=ExpressionWrapper(F('billed') - F('paid_total'), output_field=FloatField())
+                ).order_by('-due', '-items'),
+                to_attr='orders'
+            )
+        ) \
+            .annotate(
+            total_paid=Coalesce(Sum(F('order_customer__paid_total'), output_field=FloatField()), Value(0)),
+            total_billed=Coalesce(Sum(
+                F('order_customer__ordered_items__quantity') * F('order_customer__ordered_items__price_per_product') *
+                (Value(1) - F('order_customer__ordered_items__discount_percent') / 100.00), output_field=FloatField()),
+                Value(0)),
+            total_item=Coalesce(Sum(F('order_customer__ordered_items__quantity')), Value(0))
+        ).annotate(total_due=Coalesce(F('total_billed') - F('total_paid'), Value(0))).first()
+
+        return data
+
+    def update_customer_details(self, id, data):
+        customer_info = self.model.objects.get(id=id);
+        customer_info.customer_name = data['customer_name']
+        customer_info.customer_phone = data['customer_phone']
+        customer_info.customer_address = data['customer_address']
+        try:
+            customer_info.save(using=self.db)
+        except DatabaseError as e:
+            raise DatabaseError("Technical problem occurred during updating customer")
+        return True
 
 
 class OrderManager(models.Manager):
@@ -269,7 +308,7 @@ class OrderManager(models.Manager):
             Prefetch('ordered_items',
                      queryset=OrderedItem.objects.annotate(
                          sub_total=ExpressionWrapper(F('quantity') * F('price_per_product') * (
-                         Value(1) - (F('discount_percent') / 100.00)), output_field=FloatField()))
+                                 Value(1) - (F('discount_percent') / 100.00)), output_field=FloatField()))
                      .select_related('product', 'product__product', 'product__category', 'product__color',
                                      'product__size'),
                      to_attr='items'

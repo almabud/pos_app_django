@@ -21,7 +21,7 @@
                         </thead>
                         <tbody>
                         {% for customer in customer_list %}
-                            <tr>
+                            <tr class="cursor-pointer" onclick="redirect_new_page('{% url 'product:customer_details' customer.id %}')">
                                 <td>{{ customer.id }}</td>
                                 <td>{{ customer.customer_name }}</td>
                                 <td>{{ customer.customer_phone }}</td>

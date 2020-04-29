@@ -99,7 +99,7 @@ class SupplierTransaction(models.Model):
     supplier = models.ForeignKey(Supplier, related_name='product_supplier', on_delete=models.CASCADE)
     date = models.DateTimeField(default=now)
     total_supplied = models.IntegerField()
-    product = models.ForeignKey(ProductVariant, related_name='product_variant', on_delete=models.CASCADE)
+    product = models.ForeignKey(ProductVariant, related_name='product_variant', null=True, blank=True, on_delete=models.SET_NULL)
 
     objects = SupplierTransactionManager()
 

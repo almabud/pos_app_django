@@ -59,9 +59,11 @@
     function showToast(msg, background) {
         if (background == 'error') {
             background = 'toast-background-error';
-        } else if(background == 'success') {
+        } else if (background == 'success') {
             background = 'toast-background-success';
         }
+        $('#mainToast').removeClass('toast-background-error');
+        $('#mainToast').removeClass('toast-background-success');
         $('#mainToast').addClass(background);
         $('#toastText').text(msg);
         $('#mainToast').toast('show');

@@ -13,7 +13,7 @@ from django.views import View
 from django.views.generic import FormView, TemplateView
 
 from product.forms import AddNewProductForm, AddNewSupplierForm, OrderForm, ItemForm, BaseItemFormSet, ProductForm, \
-    VariantForm, NewStockForm
+    VariantForm, NewStockForm, CustomerForm
 from product.models import Product, Supplier, Customer, Order, ProductVariant
 from scripts.pos_invoice_genarator import generate_pos_invoice
 
@@ -163,6 +163,34 @@ class SupplierDetail(TemplateView):
 class CustomerList(View):
     def get(self, request):
         return render(request, 'product/customer_list.html', {"customer_list": Customer.objects.get_all_customer()})
+
+
+class CustomerDetails(TemplateView):
+    template_name = 'product/customer_details.html'
+
+    def get_context_data(self, **kwargs):
+        customer_id = kwargs['customer_id']
+        customer_details = Customer.objects.get_customer_details(customer_id)
+        customer_edit_form = CustomerForm(initial={
+            'customer_name': customer_details.customer_name,
+            'customer_phone': customer_details.customer_phone,
+            'customer_address': customer_details.customer_address
+        })
+        kwargs['customer_form'] = customer_edit_form
+        kwargs['customer_details'] = customer_details
+        return super().get_context_data(**kwargs)
+
+    def post(self, request, customer_id):
+        if request.is_ajax():
+            form = CustomerForm(request.POST)
+            if form.is_valid():
+                edited_customer_info = form.cleaned_data
+                if Customer.objects.update_customer_details(id=customer_id, data=edited_customer_info):
+                    return JsonResponse('success', status=200, safe=False)
+                else:
+                    return JsonResponse('error', status=400, safe=False)
+            else:
+                return JsonResponse(form.errors, status=400)
 
 
 class OrderList(View):
