@@ -164,6 +164,17 @@ class CustomerList(View):
     def get(self, request):
         return render(request, 'product/customer_list.html', {"customer_list": Customer.objects.get_all_customer()})
 
+    def post(self, request):
+        if request.is_ajax():
+            id = request.POST['customer_id']
+            if id:
+                if Customer.objects.delete_customer(id):
+                    return JsonResponse('success', status=200, safe=False)
+                else:
+                    return JsonResponse('error', status=400, safe=False)
+            else:
+                return JsonResponse('error', status=400, safe=False)
+
 
 class CustomerDetails(TemplateView):
     template_name = 'product/customer_details.html'

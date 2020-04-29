@@ -281,6 +281,15 @@ class CustomerManger(models.Manager):
             raise DatabaseError("Technical problem occurred during updating customer")
         return True
 
+    def delete_customer(self, id):
+        if id is None:
+            raise ValueError('Customer id is required')
+        try:
+            self.model.objects.get(id=id).delete()
+        except DatabaseError as e:
+            raise DatabaseError('Technical problem occurred while deleting customer')
+        return True
+
 
 class OrderManager(models.Manager):
     def get_all_order(self):
