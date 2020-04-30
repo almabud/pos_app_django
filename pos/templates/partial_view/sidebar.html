@@ -38,10 +38,16 @@
               <p>Sold List</p>
             </a>
           </li>
-          <li class="{% active request 'product:product_list' 'active' %}">
+           <li class="{% active request 'product:product_list' 'active' %}">
             <a href="{% url 'product:product_list' %}">
               <i class="nc-icon nc-single-copy-04"></i>
-              <p>All products list</p>
+              <p>All product list</p>
+            </a>
+          </li>
+          <li class="{% active request 'product:variant_list' 'active' %}">
+            <a href="{% url 'product:variant_list' %}">
+              <i class="nc-icon nc-single-copy-04"></i>
+              <p>All variant list</p>
             </a>
           </li>
           <li class="{% active request 'product:new_product' 'active' %}">

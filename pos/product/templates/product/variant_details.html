@@ -550,6 +550,7 @@
             function productEditSuccess(data, textStatus, jqXHR) {
                 hideSpinner();
                 initErrorText();
+                showToast('Product has been updated', 'success');
                 $('#isProductEdited').val(0)
                 window.productName = $('input[name="product_name"]').val();
                 window.productDescription = $('textarea[name="product_description"]').val();
@@ -560,6 +561,7 @@
 
             function productEditError(data, textStatus, jqXHR) {
                 hideSpinner();
+                showToast('Error occurred while updating product', 'error');
                 $('#isProductEdited').val(0)
                 var errors = data.responseJSON;
                 initErrorText();
@@ -573,6 +575,7 @@
             function variantEditSuccess(data, textStatus, jqXHR) {
                 hideSpinner();
                 initErrorText();
+                showToast('Variant has been updated', 'success');
                 window.gsm = $('select[name="gsm"]').val();
                 window.category = $('select[name="category"]').val();
                 window.size = $('select[name="size"]').val();
@@ -608,6 +611,7 @@
                 $('#isVariantEdited').val(0)
                 var errors = data.responseJSON;
                 initErrorText();
+                showToast('Error occurred while updating variant', 'error');
                 $('#errorBlock').removeClass('display-none');
                 if (errors.__all__) {
                     for (item of errors.__all__) {
@@ -620,6 +624,7 @@
             function newStockSuccess(data, textStatus, jqXHR) {
                 hideSpinner();
                 initErrorText();
+                showToast('Stock has been updated', 'success');
                 html = `
                   <tr>
                         <td>${data.date}</td>
@@ -634,6 +639,7 @@
 
             function newStockError(data, textStatus, jqXHR) {
                 hideSpinner();
+                showToast('Error occurred while adding newstock', 'error');
                 var errors = data.responseJSON;
                 initErrorText();
                 $('#newStockErrorBlock').removeClass('display-none');

@@ -27,6 +27,25 @@ class ProductList(TemplateView):
 
     def post(self, request):
         if request.is_ajax():
+            id = request.POST['product_id']
+            if id:
+                if Product.objects.delete_product(id):
+                    return JsonResponse('success', status=200, safe=False)
+                else:
+                    return JsonResponse('error', status=400, safe=False)
+            else:
+                return JsonResponse('error', status=400, safe=False)
+
+
+class VariantList(TemplateView):
+    template_name = 'product/variant_list.html'
+
+    def get_context_data(self, **kwargs):
+        kwargs['product_list'] = Product.objects.get_all_product()
+        return super().get_context_data(**kwargs)
+
+    def post(self, request):
+        if request.is_ajax():
             id = request.POST['variant_id']
             if id:
                 if ProductVariant.objects.delete_variant(id):
@@ -123,6 +142,17 @@ class SupplierList(View):
     def get(self, request):
         return render(request, 'product/supplier_list.html', {"supplier_list": Supplier.objects.get_all_supplier()})
         # return HttpResponse(all_products[0].quantity)
+
+    def post(self, request):
+        if request.is_ajax():
+            id = request.POST['supplier_id']
+            if id:
+                if Supplier.objects.delete_supplier(id):
+                    return JsonResponse('success', status=200, safe=False)
+                else:
+                    return JsonResponse('error', status=400, safe=False)
+            else:
+                return JsonResponse('error', status=400, safe=False)
 
 
 class AddNewSupplier(FormView):
@@ -260,8 +290,9 @@ class OrderDetail(TemplateView):
 
     def get_context_data(self, **kwargs):
         order_details = Order.objects.get_order_detail(order_id=self.kwargs['order_id'])
-        kwargs['order_details'] = order_details
-        kwargs['pos_invoice'] = generate_pos_invoice(order_details)
+        if order_details:
+            kwargs['order_details'] = order_details
+            kwargs['pos_invoice'] = generate_pos_invoice(order_details)
 
         return super().get_context_data(**kwargs)
 

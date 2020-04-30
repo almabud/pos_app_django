@@ -41,7 +41,7 @@ class ProductManager(models.Manager):
                                      + F('transport_cost') + F('profit')).annotate(
                          total_order=Count('orderedItem_variants')).order_by('-stock_total'),
                      to_attr="product_variant")) \
-            .annotate(total_stock=Sum('variant__stock_total')).order_by('-total_stock')
+            .annotate(total_stock=Coalesce(Sum('variant__stock_total'), Value(0))).order_by('-total_stock')
         return data
 
     def get_all_product_stock_filter(self):
@@ -125,6 +125,24 @@ class ProductManager(models.Manager):
             raise DatabaseError("Database technical problem updating product")
         return old_product
 
+    @transaction.atomic
+    def delete_product(self, id):
+        try:
+            product = self.model.objects.get(id=id)
+            from product.models import Order
+            orders = Order.objects.prefetch_related('ordered_items').filter(ordered_items__product__product=product)
+            for order in orders:
+                try:
+                    order.delete()
+                except DatabaseError as e:
+                    raise DatabaseError("Technical problem to delete product")
+            product.delete()
+
+        except DatabaseError as e:
+            raise DatabaseError("Technical problem to delete product")
+
+        return True
+
 
 class ProductVariantManager(models.Manager):
     def get_product_variant_details(self, id):
@@ -173,7 +191,16 @@ class ProductVariantManager(models.Manager):
         if id is None:
             raise ValueError("Id is required")
         try:
-            self.model.objects.get(id=id).delete()
+            from product.models import OrderedItem
+            variant = self.model.objects.get(id=id)
+            from product.models import Order
+            orders = Order.objects.prefetch_related('ordered_items').filter(ordered_items__product=variant)
+            for order in orders:
+                try:
+                    order.delete()
+                except DatabaseError as e:
+                    raise DatabaseError("Technical problem to delete variant")
+            variant.delete()
         except DatabaseError as e:
             raise DatabaseError("Technical problem to delete variant")
         return True
@@ -187,7 +214,7 @@ class SupplierManager(models.Manager):
 
     def get_supplier_details(self, id):
         from product.models import SupplierTransaction
-        data = self.model.objects.filter(id=1).prefetch_related(
+        data = self.model.objects.filter(id=id).prefetch_related(
             Prefetch('product_supplier', queryset=SupplierTransaction.objects.select_related(
                 'product', 'product__size', 'product__color', 'product__category', 'product__product').order_by(
                 '-date'), to_attr='product_list')
@@ -212,6 +239,16 @@ class SupplierManager(models.Manager):
             raise ValueError("name, mobile_no, address are required.")
 
         return old_supplier
+
+    @transaction.atomic
+    def delete_supplier(self, id):
+        if id is None:
+            raise ValueError('Supplier id is required')
+        try:
+            self.model.objects.get(id=id).delete()
+        except DatabaseError as e:
+            raise DatabaseError('Technical problem occurred while deleting supplier')
+        return True
 
 
 class SupplierTransactionManager(models.Manager):
@@ -270,6 +307,7 @@ class CustomerManger(models.Manager):
 
         return data
 
+    @transaction.atomic
     def update_customer_details(self, id, data):
         customer_info = self.model.objects.get(id=id);
         customer_info.customer_name = data['customer_name']
@@ -281,6 +319,7 @@ class CustomerManger(models.Manager):
             raise DatabaseError("Technical problem occurred during updating customer")
         return True
 
+    @transaction.atomic
     def delete_customer(self, id):
         if id is None:
             raise ValueError('Customer id is required')
@@ -330,10 +369,10 @@ class OrderManager(models.Manager):
             'customer', 'sold_by') \
             .annotate(
             total_item=Coalesce(Sum('ordered_items__quantity'), Value(0)),
-            total_billed=Sum(
+            total_billed=Coalesce(Sum(
                 (F('ordered_items__quantity') * F('ordered_items__price_per_product'))
                 * (Value(1) - (F('ordered_items__discount_percent') / 100.00)),
-                output_field=FloatField()),
+                output_field=FloatField()), Value(0)),
             total_due=Case(
                 When(is_paid=False,
                      then=Sum((F('ordered_items__quantity')
