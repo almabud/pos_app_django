@@ -14,7 +14,7 @@ from django.views.generic import FormView, TemplateView
 
 from product.forms import AddNewProductForm, AddNewSupplierForm, OrderForm, ItemForm, BaseItemFormSet, ProductForm, \
     VariantForm, NewStockForm, CustomerForm
-from product.models import Product, Supplier, Customer, Order, ProductVariant
+from product.models import Product, Supplier, Customer, Order, ProductVariant, Size, Color, Category
 from scripts.pos_invoice_genarator import generate_pos_invoice
 
 
@@ -37,21 +37,100 @@ class ProductList(TemplateView):
                 return JsonResponse('error', status=400, safe=False)
 
 
+class ProductDetails(TemplateView):
+    template_name = 'product/product_details.html'
+
+    def get_context_data(self, **kwargs):
+        product_id = kwargs['product_id']
+        product_details = Product.objects.get_product_details(product_id)
+        product_edit_form = ProductForm(initial={
+            'product_name': product_details.product_name,
+            'product_description': product_details.product_description
+        })
+        kwargs['product_form'] = product_edit_form
+        kwargs['product_details'] = product_details
+        return super().get_context_data(**kwargs)
+
+    def post(self, request, product_id):
+        if 'variant_id' in request.POST and request.POST['variant_id']:
+            variant_id = request.POST['variant_id']
+            if ProductVariant.objects.delete_variant(variant_id):
+                return JsonResponse("success", status=201, safe=False)
+            else:
+                return JsonResponse('error', status=400, safe=False)
+        else:
+            form = ProductForm(request.POST)
+            if form.is_valid():
+                cleaned_data = form.cleaned_data
+                Product.objects.update_product(product_id, cleaned_data)
+                return JsonResponse("success", status=201, safe=False)
+            else:
+                return JsonResponse(form.errors, status=400)
+
+
 class VariantList(TemplateView):
     template_name = 'product/variant_list.html'
 
     def get_context_data(self, **kwargs):
         kwargs['product_list'] = Product.objects.get_all_product()
+        kwargs['sizes'] = Size.objects.all()
+        kwargs['colors'] = Color.objects.all()
+        kwargs['categories'] = Category.objects.all()
         return super().get_context_data(**kwargs)
 
     def post(self, request):
         if request.is_ajax():
-            id = request.POST['variant_id']
-            if id:
+            data = request.POST
+
+            def check_is_edited():
+                if 'is_edited' not in data or not data['is_edited']:
+                    return JsonResponse({'error': 'is_edited field is required'}, status=400, safe=False)
+                if 'id' not in data or not data['id']:
+                    return JsonResponse({'error': 'id field is required'}, status=400, safe=False)
+                return True
+
+            if 'variant_id' in data and data['variant_id']:
+                id = data['variant_id']
                 if ProductVariant.objects.delete_variant(id):
                     return JsonResponse('success', status=200, safe=False)
                 else:
                     return JsonResponse('error', status=400, safe=False)
+            elif 'size' in data and data['size']:
+                if check_is_edited():
+                    if data['is_edited'] == '0':
+                        if Size.objects.filter(size__iexact=data['size']).count() > 0:
+                            return JsonResponse({'error': 'This size is already exist'}, status=400, safe=False)
+                    if Size.objects.update_size(data['id'], data['size']):
+                        return JsonResponse('success', status=200, safe=False)
+
+            elif 'color' in data and data['color']:
+                if check_is_edited():
+                    if data['is_edited'] == '0':
+                        if Color.objects.filter(color__iexact=data['color']).count() > 0:
+                            return JsonResponse({'error': 'This color is already exist'}, status=400, safe=False)
+                    if Color.objects.update_color(data['id'], data['color']):
+                        return JsonResponse('success', status=200, safe=False)
+            elif 'category' in data and data['category']:
+                if check_is_edited():
+                    if data['is_edited'] == '0':
+                        if Category.objects.filter(category__iexact=data['category']).count() > 0:
+                            return JsonResponse({'error': 'This category is already exist'}, status=400, safe=False)
+                    if Category.objects.update_category(data['id'], data['category']):
+                        return JsonResponse('success', status=200, safe=False)
+            elif 'size_id' in data and data['size_id']:
+                id = data['size_id']
+                variants = Size.objects.delete_size(id)
+                return JsonResponse(variants, status=200, safe=False)
+            elif 'color_id' in data and data['color_id']:
+                id = data['color_id']
+                if Color.objects.delete_color(id):
+                    return JsonResponse('success', status=200, safe=False)
+                else:
+                    return JsonResponse('error', status=400, safe=False)
+            elif 'category_id' in data and data['category_id']:
+                id = data['category_id']
+                variants = Category.objects.delete_category(id)
+                return JsonResponse(variants, status=200, safe=False)
             else:
                 return JsonResponse('error', status=400, safe=False)
 
@@ -124,10 +203,6 @@ class VariantDetails(TemplateView):
                     return JsonResponse(form.errors, status=400)
 
 
-class ProductDetails(TemplateView):
-    template_name = 'product/product_details.html'
-
-
 class AddNewProduct(FormView):
     template_name = 'product/create_product.html'
     form_class = AddNewProductForm
@@ -135,7 +210,7 @@ class AddNewProduct(FormView):
     def form_valid(self, form):
         clean_form = form.cleaned_data
         Product.objects.create_product(**clean_form)
-        return redirect('product:product_list')
+        return redirect('product:variant_list')
 
 
 class SupplierList(View):

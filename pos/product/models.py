@@ -5,12 +5,14 @@ from django.utils.timezone import now
 
 from core.models import User
 from product.manager import ColorManager, ProductManager, SupplierTransactionManager, SupplierManager, CustomerManger, \
-    OrderManager, ProductVariantManager
+    OrderManager, ProductVariantManager, SizeManager, CategoryManager
 
 
 class Size(models.Model):
     """The model of bags size"""
     size = models.CharField(max_length=100, unique=True)
+
+    objects = SizeManager()
 
     def __str__(self):
         return self.size
@@ -19,6 +21,8 @@ class Size(models.Model):
 class Category(models.Model):
     """The model of bags category"""
     category = models.CharField(max_length=100, unique=True)
+
+    objects = CategoryManager()
 
     def __str__(self):
         return self.category
@@ -67,7 +71,7 @@ class ProductVariant(models.Model):
     profit = models.FloatField(default=0.0)
     discount_percent = models.IntegerField(default=0)
     discount_min_purchase = models.IntegerField(default=0)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, related_name='product_category', on_delete=models.CASCADE)
     color = models.ForeignKey(Color, related_name='product_color', on_delete=models.CASCADE, null=True, blank=True)
     size = models.ForeignKey(Size, related_name='product_size', on_delete=models.CASCADE)
     stock_total = models.IntegerField(default=0)

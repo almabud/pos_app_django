@@ -17,15 +17,106 @@ class ColorManager(models.Manager):
         color.save(using=self.db)
         return color
 
-    def update(self, objects):
-        """Update existing color"""
-        if not isinstance(objects, self.model):
-            raise ValueError('Please insert correct value.')
-        if not objects.color:
-            raise ValueError('Please insert correct value2.')
-        objects.color = objects.color.capitalize()
-        objects.save(using=self.db)
-        return objects
+    @transaction.atomic
+    def update_color(self, id, new_color):
+        try:
+            old_color = self.model.objects.get(id=id)
+            old_color.color = new_color.capitalize()
+            old_color.save(using=self.db)
+        except DatabaseError as e:
+            raise DatabaseError('Error updating color')
+        return True
+
+    def delete_color(self, id):
+        try:
+            self.model.objects.get(id=id).delete()
+        except DatabaseError as e:
+            raise DatabaseError("Error occurred while deleting color")
+        return True
+
+
+class SizeManager(models.Manager):
+    @transaction.atomic
+    def delete_size(self, id):
+        from product.models import ProductVariant
+        from product.models import OrderedItem
+        will_delete_size = self.model.objects.filter(id=id).prefetch_related(
+            Prefetch(
+                'product_size',
+                queryset=ProductVariant.objects.prefetch_related(
+                    Prefetch(
+                        'orderedItem_variants',
+                        queryset=OrderedItem.objects.select_related('order'),
+                        to_attr='orders_item'
+                    )
+                ),
+                to_attr='variants'
+            )
+        ).first()
+        orders = [item.order for variant in will_delete_size.variants for item in variant.orders_item]
+        variants_id = [variant.id for variant in will_delete_size.variants]
+        try:
+            will_delete_size.delete()
+        except DatabaseError as e:
+            raise DatabaseError("Error occurred while deleting size")
+        for order in orders:
+            try:
+                order.delete()
+            except DatabaseError as e:
+                raise DatabaseError("Technical problem to delete size")
+        return variants_id
+
+    @transaction.atomic
+    def update_size(self, id, new_size):
+        try:
+            old_size = self.model.objects.get(id=id)
+            old_size.size = new_size
+            old_size.save(using=self.db)
+        except DatabaseError as e:
+            raise DatabaseError('Error updating size')
+        return True
+
+
+class CategoryManager(models.Manager):
+    @transaction.atomic
+    def delete_category(self, id):
+        from product.models import ProductVariant
+        from product.models import OrderedItem
+        will_delete_category = self.model.objects.filter(id=id).prefetch_related(
+            Prefetch(
+                'product_category',
+                queryset=ProductVariant.objects.prefetch_related(
+                    Prefetch(
+                        'orderedItem_variants',
+                        queryset=OrderedItem.objects.select_related('order'),
+                        to_attr='orders_item'
+                    )
+                ),
+                to_attr='variants'
+            )
+        ).first()
+        orders = [item.order for variant in will_delete_category.variants for item in variant.orders_item]
+        variants_id = [variant.id for variant in will_delete_category.variants]
+        try:
+            will_delete_category.delete()
+        except DatabaseError as e:
+            raise DatabaseError("Error occurred while deleting size")
+        for order in orders:
+            try:
+                order.delete()
+            except DatabaseError as e:
+                raise DatabaseError("Technical problem to delete size")
+        return variants_id
+
+    @transaction.atomic
+    def update_category(self, id, new_category):
+        try:
+            old_category = self.model.objects.get(id=id)
+            old_category.category = new_category
+            old_category.save(using=self.db)
+        except DatabaseError as e:
+            raise DatabaseError('Error updating category')
+        return True
 
 
 class ProductManager(models.Manager):
@@ -54,6 +145,19 @@ class ProductManager(models.Manager):
                                      + F('transport_cost') + F('profit')).filter(stock_total__gt=0).order_by('id'),
                      to_attr="product_variant")) \
             .annotate(total_stock=Sum('variant__stock_total'))
+
+    def get_product_details(self, id):
+        from product.models import ProductVariant
+        data = self.model.objects.filter(id=id).prefetch_related(
+            Prefetch(
+                'variant',
+                queryset=ProductVariant.objects.select_related('color', 'size', 'category').annotate(
+                    price=F('bag_purchase_price') + F('marketing_cost') + F('transport_cost') + F('printing_cost') + F(
+                        'vat') + F('profit')),
+                to_attr='variants'
+            )
+        ).first()
+        return data
 
     @transaction.atomic
     def create_product(self, **fields):
@@ -309,7 +413,7 @@ class CustomerManger(models.Manager):
 
     @transaction.atomic
     def update_customer_details(self, id, data):
-        customer_info = self.model.objects.get(id=id);
+        customer_info = self.model.objects.get(id=id)
         customer_info.customer_name = data['customer_name']
         customer_info.customer_phone = data['customer_phone']
         customer_info.customer_address = data['customer_address']

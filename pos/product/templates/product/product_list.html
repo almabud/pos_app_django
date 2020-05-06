@@ -88,7 +88,7 @@
         function confirmDelete() {
             var totalVariant = $('#deleteBtn').data('totalVariant');
             totalVariant > 1 ? totalVariant = totalVariant + " variants" : totalVariant = totalVariant + " variant";
-            var action = confirm("Do yo really want to delete this product? Then " + totalVariant + " and associated transaction will be deleted.");
+            var action = confirm("Do yo really want to delete this product? Then " + totalVariant + " and associated transactions will be deleted.");
             if (action) {
                 deleteProductItem();
             }
