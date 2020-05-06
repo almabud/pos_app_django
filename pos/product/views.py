@@ -13,8 +13,8 @@ from django.views import View
 from django.views.generic import FormView, TemplateView
 
 from product.forms import AddNewProductForm, AddNewSupplierForm, OrderForm, ItemForm, BaseItemFormSet, ProductForm, \
-    VariantForm, NewStockForm, CustomerForm
-from product.models import Product, Supplier, Customer, Order, ProductVariant, Size, Color, Category
+    VariantForm, NewStockForm, CustomerForm, OtherCostForm
+from product.models import Product, Supplier, Customer, Order, ProductVariant, Size, Color, Category, OtherCost
 from scripts.pos_invoice_genarator import generate_pos_invoice
 
 
@@ -398,3 +398,43 @@ class OrderDetail(TemplateView):
         current_user = request.user
         new_payment = Order.objects.make_payment(order_id, request.POST['amount'], current_user)
         return HttpResponseRedirect(self.request.path_info)
+
+
+class UtilityBill(TemplateView):
+    template_name = 'product/other_cost_list.html'
+
+    def get_context_data(self, **kwargs):
+        data = OtherCost.objects.all().order_by('-date')
+        if 'form' not in kwargs:
+            form = OtherCostForm()
+        else:
+            form = kwargs['form']
+        kwargs['other_cost_list'] = data
+        kwargs['form'] = form
+        return super().get_context_data(**kwargs)
+
+    def post(self, request):
+        data = request.POST
+        if request.is_ajax():
+            if 'utility_bill_dlt_id' in data and data['utility_bill_dlt_id']:
+                if OtherCost.objects.delete_utility_bill(data['utility_bill_dlt_id']):
+                    return JsonResponse('success', status=200, safe=False)
+                else:
+                    return JsonResponse('error', status=400, safe=False)
+            else:
+                form = OtherCostForm(data)
+                if form.is_valid():
+                    id = data['id']
+                    if OtherCost.objects.update_utility_bill(id=id, data=form.cleaned_data):
+                        return JsonResponse('success', status=201, safe=False)
+                    else:
+                        return JsonResponse('error', status=400, safe=False)
+                else:
+                    return JsonResponse('error', status=400, safe=False)
+        else:
+            form = OtherCostForm(data)
+            if form.is_valid():
+                form.save()
+                return redirect('product:other_cost')
+            else:
+                return self.render_to_response(self.get_context_data(form=form))

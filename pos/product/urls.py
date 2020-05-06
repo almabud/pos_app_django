@@ -17,4 +17,5 @@ urlpatterns = [
     path('supplier_details/<int:supplier_id>/', views.SupplierDetail.as_view(), name='supplier_details'),
     path('variant_details/<int:variant_id>/', views.VariantDetails.as_view(), name='variant_details'),
     path('product_details/<int:product_id>/', views.ProductDetails.as_view(), name='product_details'),
+    path('other_cost/', views.UtilityBill.as_view(), name='other_cost'),
 ]

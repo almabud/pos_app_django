@@ -1,7 +1,7 @@
 from django import forms
 from django.forms import ModelForm, TextInput, NumberInput, Textarea, BaseFormSet, Select
 
-from product.models import Category, Size, Color, Product, Supplier, Order, Customer, ProductVariant
+from product.models import Category, Size, Color, Product, Supplier, Order, Customer, ProductVariant, OtherCost
 
 
 class ProductForm(forms.ModelForm):
@@ -287,3 +287,24 @@ class BaseItemFormSet(BaseFormSet):
         super(BaseItemFormSet, self).clean()
         if not self.forms:
             raise forms.ValidationError("Please select at least 1 item")
+
+
+class OtherCostForm(forms.ModelForm):
+    class Meta:
+        model = OtherCost
+        fields = ['shop_rent', 'shop_rent_per_product', 'electricity_bill', 'electricity_bill_per_product', 'others_bill', 'others_bill_per_product']
+        widgets = {
+            'shop_rent': NumberInput(
+                attrs={'class': 'form-control', 'id': 'shopRentInput' }),
+            'shop_rent_per_product': NumberInput(
+                attrs={'class': 'form-control', 'id': 'shopRentPerProductInput'}),
+            'electricity_bill': NumberInput(
+                attrs={'class': 'form-control', 'id': 'electricityBillInput'}),
+            'electricity_bill_per_product': NumberInput(
+                attrs={'class': 'form-control', 'id': 'electricityBillPerProductInput'}),
+            'others_bill': NumberInput(
+                attrs={'class': 'form-control', 'id': 'otherBillInput'}),
+            'others_bill_per_product': NumberInput(
+                attrs={'class': 'form-control', 'id': 'otherBillPerProductInput'}),
+
+        }

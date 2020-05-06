@@ -5,7 +5,7 @@ from django.utils.timezone import now
 
 from core.models import User
 from product.manager import ColorManager, ProductManager, SupplierTransactionManager, SupplierManager, CustomerManger, \
-    OrderManager, ProductVariantManager, SizeManager, CategoryManager
+    OrderManager, ProductVariantManager, SizeManager, CategoryManager, OtherCostManager
 
 
 class Size(models.Model):
@@ -158,3 +158,16 @@ class OrderedItem(models.Model):
 
     def __str__(self):
         return "Item No- {}".format(self.id)
+
+
+class OtherCost(models.Model):
+    """This model store the other cost of the host"""
+    date = models.DateField(default=now)
+    shop_rent = models.FloatField(default=0.0)
+    shop_rent_per_product = models.FloatField(default=0.0)
+    electricity_bill = models.FloatField(default=0.0)
+    electricity_bill_per_product = models.FloatField(default=0.0)
+    others_bill = models.FloatField(default=0.0)
+    others_bill_per_product = models.FloatField(default=0.0)
+
+    objects = OtherCostManager()

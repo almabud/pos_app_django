@@ -86,6 +86,12 @@
               <p>Customer List</p>
             </a>
           </li>
+          <li class="{% active request 'product:other_cost' 'active' %}">
+            <a href="{% url 'product:other_cost' %}">
+              <i class="nc-icon nc-paper"></i>
+              <p>Other costs</p>
+            </a>
+         </li>
         </ul>
       </div>
     </div>

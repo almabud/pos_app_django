@@ -627,3 +627,27 @@ class OrderManager(models.Manager):
         except DatabaseError as e:
             raise DatabaseError("Technical problem raised while deleting item")
         return True
+
+
+class OtherCostManager(models.Manager):
+    def delete_utility_bill(self, id):
+        try:
+            self.model.objects.get(id=id).delete()
+        except DatabaseError as e:
+            raise DatabaseError('Error occurred while deleting utility bill')
+
+        return True
+
+    def update_utility_bill(self, id, data):
+        try:
+            old_data = self.model.objects.get(id=id)
+            old_data.shop_rent = data['shop_rent']
+            old_data.shop_rent_per_product = data['shop_rent_per_product']
+            old_data.electricity_bill = data['electricity_bill']
+            old_data.electricity_bill_per_product = data['electricity_bill_per_product']
+            old_data.others_bill = data['others_bill']
+            old_data.others_bill_per_product = data['others_bill_per_product']
+            old_data.save(using=self.db)
+        except DatabaseError as e:
+            raise DatabaseError('Error occurred while updating utility bill')
+        return True
