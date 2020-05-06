@@ -5,6 +5,7 @@ from django.db import models, DatabaseError, transaction
 from django.db.models import Prefetch, F, When, Q, Value, Case, FloatField, QuerySet, ExpressionWrapper, Sum, Avg, \
     Count, IntegerField
 from django.db.models.functions import Coalesce
+from django.utils.timezone import now
 
 
 class ColorManager(models.Manager):
@@ -123,13 +124,16 @@ class ProductManager(models.Manager):
     def get_all_product(self):
         from product.models import ProductVariant
         from product.models import OrderedItem
+        from product.models import OtherCost
+        other_price = OtherCost.objects.current_month_bill()
         data = self.model.objects.prefetch_related(
             Prefetch("variant",
                      queryset=ProductVariant.objects.select_related('color', 'size', 'category').prefetch_related(
                          'orderedItem_variants',
                      )
                      .annotate(price=F('bag_purchase_price') + F('marketing_cost') + F('vat') + F('printing_cost')
-                                     + F('transport_cost') + F('profit')).annotate(
+                                     + F('transport_cost') + F('profit') + Value(other_price['others_bill'],
+                                                                                 output_field=FloatField())).annotate(
                          total_order=Count('orderedItem_variants')).order_by('-stock_total'),
                      to_attr="product_variant")) \
             .annotate(total_stock=Coalesce(Sum('variant__stock_total'), Value(0))).order_by('-total_stock')
@@ -138,22 +142,29 @@ class ProductManager(models.Manager):
     def get_all_product_stock_filter(self):
 
         from product.models import ProductVariant
+        from product.models import OtherCost
+        other_price = OtherCost.objects.current_month_bill()
         return self.model.objects.prefetch_related(
             Prefetch("variant",
                      queryset=ProductVariant.objects.select_related('color', 'size', 'category')
                      .annotate(price=F('bag_purchase_price') + F('marketing_cost') + F('vat') + F('printing_cost')
-                                     + F('transport_cost') + F('profit')).filter(stock_total__gt=0).order_by('id'),
+                                     + F('transport_cost') + F('profit') + Value(other_price['others_bill'],
+                                                                                 output_field=FloatField())).filter(
+                         stock_total__gt=0).order_by('id'),
                      to_attr="product_variant")) \
             .annotate(total_stock=Sum('variant__stock_total'))
 
     def get_product_details(self, id):
         from product.models import ProductVariant
+        from product.models import OtherCost
+        other_price = OtherCost.objects.current_month_bill()
         data = self.model.objects.filter(id=id).prefetch_related(
             Prefetch(
                 'variant',
                 queryset=ProductVariant.objects.select_related('color', 'size', 'category').annotate(
                     price=F('bag_purchase_price') + F('marketing_cost') + F('transport_cost') + F('printing_cost') + F(
-                        'vat') + F('profit')),
+                        'vat') + F('profit') + Value(other_price['others_bill'],
+                                                     output_field=FloatField())),
                 to_attr='variants'
             )
         ).first()
@@ -251,6 +262,8 @@ class ProductManager(models.Manager):
 class ProductVariantManager(models.Manager):
     def get_product_variant_details(self, id):
         from product.models import SupplierTransaction
+        from product.models import OtherCost
+        other_price = OtherCost.objects.current_month_bill()
         return self.model.objects.filter(id=id).select_related('size', 'color', 'category', 'product') \
             .prefetch_related(
             Prefetch('product_variant',
@@ -259,7 +272,8 @@ class ProductVariantManager(models.Manager):
                      )
 
         ).annotate(price=F('bag_purchase_price') + F('marketing_cost') + F('vat') + F('printing_cost')
-                         + F('transport_cost') + F('profit')).first()
+                         + F('transport_cost') + F('profit') + Value(other_price['others_bill'],
+                                                                     output_field=FloatField())).first()
 
     @transaction.atomic
     def update_variant(self, id, form_data):
@@ -630,6 +644,15 @@ class OrderManager(models.Manager):
 
 
 class OtherCostManager(models.Manager):
+    def current_month_bill(self):
+        current_month = now().month
+        current_year = now().year
+        data = self.model.objects.filter(date__month=current_month, date__year=current_year).aggregate(
+            others_bill=Coalesce(Sum(
+                F('shop_rent_per_product') + F('electricity_bill_per_product') + F('others_bill_per_product'),
+                output_field=FloatField()), Value(0, output_field=FloatField())))
+        return data
+
     def delete_utility_bill(self, id):
         try:
             self.model.objects.get(id=id).delete()
