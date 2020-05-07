@@ -3,7 +3,7 @@ from decimal import *
 from django.core.exceptions import ValidationError
 from django.db import models, DatabaseError, transaction
 from django.db.models import Prefetch, F, When, Q, Value, Case, FloatField, QuerySet, ExpressionWrapper, Sum, Avg, \
-    Count, IntegerField
+    Count, IntegerField, Func
 from django.db.models.functions import Coalesce
 from django.utils.timezone import now
 
@@ -264,7 +264,7 @@ class ProductVariantManager(models.Manager):
         from product.models import SupplierTransaction
         from product.models import OtherCost
         other_price = OtherCost.objects.current_month_bill()
-        return self.model.objects.filter(id=id).select_related('size', 'color', 'category', 'product') \
+        data = self.model.objects.filter(id=id).select_related('size', 'color', 'category', 'product') \
             .prefetch_related(
             Prefetch('product_variant',
                      queryset=SupplierTransaction.objects.select_related('supplier').order_by('-date'),
@@ -274,6 +274,11 @@ class ProductVariantManager(models.Manager):
         ).annotate(price=F('bag_purchase_price') + F('marketing_cost') + F('vat') + F('printing_cost')
                          + F('transport_cost') + F('profit') + Value(other_price['others_bill'],
                                                                      output_field=FloatField())).first()
+        return data
+
+    def net_stock(self):
+        data = self.model.objects.aggregate(net_stock=Sum(F('stock_total')))
+        return data
 
     @transaction.atomic
     def update_variant(self, id, form_data):
@@ -449,6 +454,20 @@ class CustomerManger(models.Manager):
 
 
 class OrderManager(models.Manager):
+    def net_order(self):
+        data = self.model.objects.prefetch_related('ordered_items').annotate(
+            total_billed=Sum(
+                (F('ordered_items__quantity') * F('ordered_items__price_per_product'))
+                * (Value(1) - (F('ordered_items__discount_percent') / 100.00)),
+                output_field=FloatField()),
+        ).aggregate(
+            net_order=Count(F('id')),
+            full_paid_order=Count(Case(When(total_billed__exact=F('paid_total'), then=1), output_field=IntegerField())),
+            semi_paid_order=Count(
+                Case(When(total_billed__exact=F('paid_total'), then=0), default=1, output_field=IntegerField()))
+        )
+        return data
+
     def get_all_order(self):
         data = self.model.objects.all().prefetch_related('ordered_items').select_related('customer', 'sold_by') \
             .annotate(total_item=Coalesce(Sum('ordered_items__quantity'), Value(0)),
@@ -456,15 +475,17 @@ class OrderManager(models.Manager):
                           (F('ordered_items__quantity') * F('ordered_items__price_per_product'))
                           * (Value(1) - (F('ordered_items__discount_percent') / 100.00)),
                           output_field=FloatField()),
-                      total_due=Case(
-                          When(is_paid=False,
-                               then=Sum((F('ordered_items__quantity')
-                                         * F('ordered_items__price_per_product'))
-                                        * (Value(1) - (F('ordered_items__discount_percent') / 100.00))
-                                        ) - F('paid_total')),
-                          default=Value(0),
-                          output_field=FloatField()
-                      )).order_by('-total_due')
+                      ).annotate(
+            total_due=Case(
+                When(is_paid=False,
+                     then=Sum((F('ordered_items__quantity')
+                               * F('ordered_items__price_per_product'))
+                              * (Value(1) - (F('ordered_items__discount_percent') / 100.00))
+                              ) - F('paid_total')),
+                default=Value(0),
+                output_field=FloatField()
+            )).order_by(
+            '-total_due')
         return data
 
     def get_order_detail(self, order_id):
@@ -491,6 +512,7 @@ class OrderManager(models.Manager):
                 (F('ordered_items__quantity') * F('ordered_items__price_per_product'))
                 * (Value(1) - (F('ordered_items__discount_percent') / 100.00)),
                 output_field=FloatField()), Value(0)),
+        ).annotate(
             total_due=Case(
                 When(is_paid=False,
                      then=Sum((F('ordered_items__quantity')
@@ -526,6 +548,11 @@ class OrderManager(models.Manager):
 
         """Save the new order"""
         try:
+            total_billed = 0
+            for item in items:
+                total_billed += item['price_per_product'] * item['quantity'] * (1 - (item['discount_percent'] / 100.0))
+            if round(total_billed, 2) == round(order['paid_total'], 2):
+                order['is_paid'] = True
             new_order = self.model(**order)
             new_order.save(using=self.db)
         except DatabaseError as e:
@@ -542,11 +569,17 @@ class OrderManager(models.Manager):
             except DatabaseError as e:
                 raise DatabaseError("Database technical issue")
         """Save the items of the order"""
-        new_item_queryset = list(ProductVariant.objects.filter(id__in=[i['product'] for i in items]))
+        try:
+            new_item_queryset = list(ProductVariant.objects.filter(id__in=[i['product'] for i in items]))
+        except DatabaseError as e:
+            raise DatabaseError("Database technical issue")
         new_item_list = [OrderedItem(
             product=new_item_queryset[i],
-            price_per_product=items[i]['price_per_product'], discount_percent=items[i]['discount_percent'],
-            quantity=items[i]['quantity'], order=new_order
+            price_per_product=items[i]['price_per_product'],
+            discount_percent=items[i]['discount_percent'],
+            profit_per_product=new_item_queryset[i].profit,
+            quantity=items[i]['quantity'],
+            order=new_order
         ) for i in range(len(items))]
 
         try:
@@ -571,8 +604,15 @@ class OrderManager(models.Manager):
         """This method is responsible for add new payment to payment history"""
         if not order_id or not amount or not received_by:
             raise ValueError("All field is required")
-        order = self.model.objects.get(id=order_id)
+        order = self.model.objects.filter(id=order_id).prefetch_related('ordered_items').annotate(
+            total_billed=Sum(
+                (F('ordered_items__quantity') * F('ordered_items__price_per_product'))
+                * (Value(1) - (F('ordered_items__discount_percent') / 100.00)),
+                output_field=FloatField()),
+        ).first()
         order.paid_total = order.paid_total + float(amount)
+        if round(order.paid_total, 2) == round(order.total_billed, 2):
+            order.is_paid = True
         try:
             order.save(using=self.db)
         except DatabaseError as e:
@@ -641,6 +681,24 @@ class OrderManager(models.Manager):
         except DatabaseError as e:
             raise DatabaseError("Technical problem raised while deleting item")
         return True
+
+
+class OrderedItemManager(models.Manager):
+    def net_sold_item(self):
+        data = self.model.objects.aggregate(net_sold_item=Sum(F('quantity'), output_field=IntegerField()))
+        return data
+
+    def calculate_net_profit(self):
+        from product.models import OtherCost
+        data = OtherCost.objects.values('date__month', 'date__year').annotate(month_bill=Coalesce(Sum(
+            F('shop_rent_per_product') + F('electricity_bill_per_product') + F('others_bill_per_product'),
+            output_field=FloatField()), Value(0, output_field=FloatField())))
+        # data = list(data)
+        print(data)
+        data2 = self.model.objects.select_related('order').annotate(
+
+        )
+        return data
 
 
 class OtherCostManager(models.Manager):

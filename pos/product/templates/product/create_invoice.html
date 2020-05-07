@@ -196,7 +196,7 @@
                                                     color: `{{ variant.color.color }}`,
                                                     size: `{{ variant.size.size }}`,
                                                     gsm: `{{ variant.gsm }}`,
-                                                    price: `{{ variant.price|floatformat:3 }}`,
+                                                    price: `{{ variant.price|floatformat:2 }}`,
                                                     stock_total: `{{ variant.stock_total }}`,
                                                     discount_percent: `{{ variant.discount_percent }}`,
                                                     discount_min_purchase: `{{ variant.discount_min_purchase }}`
@@ -207,7 +207,7 @@
                                             <td>{{ variant.gsm }}</td>
                                             <td>{{ variant.size }}</td>
                                             <td>{{ variant.color }}</td>
-                                            <td class="text-right">{{ variant.price|floatformat:3 }}</td>
+                                            <td class="text-right">{{ variant.price|floatformat:2 }}</td>
                                             <td class="text-center">{{ variant.discount_percent }} <br>
                                                 <span style="font-size: 10px;">Min purchase- {{ variant.discount_min_purchase }}</span>
                                             </td>

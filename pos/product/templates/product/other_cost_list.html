@@ -39,12 +39,12 @@
                                 <tr class="other_cost_row cursor-pointer" data-id='{{ other_cost.id }}'>
                                     <td>{{ other_cost.id }}</td>
                                     <td>{{ other_cost.date|date:'d/m/Y' }}</td>
-                                    <td>{{ other_cost.shop_rent|floatformat:3 }}</td>
-                                    <td>{{ other_cost.shop_rent_per_product|floatformat:3 }}</td>
-                                    <td>{{ other_cost.electricity_bill|floatformat:3 }}</td>
-                                    <td>{{ other_cost.electricity_bill_per_product|floatformat:3 }}</td>
-                                    <td>{{ other_cost.others_bill|floatformat:3 }}</td>
-                                    <td>{{ other_cost.others_bill_per_product|floatformat:3 }}</td>
+                                    <td>{{ other_cost.shop_rent|floatformat:2 }}</td>
+                                    <td>{{ other_cost.shop_rent_per_product|floatformat:2 }}</td>
+                                    <td>{{ other_cost.electricity_bill|floatformat:2 }}</td>
+                                    <td>{{ other_cost.electricity_bill_per_product|floatformat:2 }}</td>
+                                    <td>{{ other_cost.others_bill|floatformat:2 }}</td>
+                                    <td>{{ other_cost.others_bill_per_product|floatformat:2 }}</td>
                                 </tr>
                             {% endfor %}
                             </tbody>

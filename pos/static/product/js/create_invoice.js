@@ -21,7 +21,7 @@ function calculateGrandTotal() {
 function disableOrEnablePaidetotalField() {
     var grandTotal = calculateGrandTotal();
     if (!isNaN(grandTotal.grandTotal)) {
-        $('#grand_total').text(grandTotal.grandTotal.toFixed(3));
+        $('#grand_total').text(grandTotal.grandTotal.toFixed(2));
         if (grandTotal.nancount > 0) {
             $('#paid_total_field').attr('disabled', true);
             $('#paid_total_field').val('')
@@ -29,7 +29,7 @@ function disableOrEnablePaidetotalField() {
         } else {
             $('#paid_total_field').removeAttr('disabled');
         }
-        $('#paid_total_field').attr('max', grandTotal.grandTotal.toFixed(3));
+        $('#paid_total_field').attr('max', grandTotal.grandTotal.toFixed(2));
     } else {
         $('#grand_total').text('----');
         $('#paid_total_field').attr('disabled', true);
@@ -41,7 +41,7 @@ function disableOrEnablePaidetotalField() {
 function onChangeQuantity(quantityField) {
     var $row = quantityField.closest("tr");
     var $tds = $row.find("td");
-    var price = parseFloat($($tds[6]).text()).toFixed(3);
+    var price = parseFloat($($tds[6]).text()).toFixed(2);
     var quantity = parseInt(quantityField.val());
     var discount = parseInt(quantityField.data('discount'));
     var minPurchase = parseInt(quantityField.data('min-purchase'));
@@ -60,13 +60,13 @@ function onChangeQuantity(quantityField) {
         }
 
         if (quantity >= minPurchase && minPurchase != 0 && discount != 0) {
-            subTotal = ((quantity * price) * (1.00 - (discount / 100.000))).toFixed(3);
+            subTotal = ((quantity * price) * (1.00 - (discount / 100.000))).toFixed(2);
             $($tds[7]).find('input').attr('value', discount);
             $($tds[7]).find('span').text(discount);
         } else {
              $($tds[7]).find('input').attr('value', 0);
             $($tds[7]).find('span').text(0);
-            subTotal = (quantity * price).toFixed(3);
+            subTotal = (quantity * price).toFixed(2);
         }
         $($tds[9]).text(subTotal);
     } else {
@@ -128,13 +128,13 @@ function paidTotalInputFieldChange() {
         if (!isNaN(paidTotal) && !isNaN(grandTotal.grandTotal)) {
             var due = grandTotal.grandTotal - paidTotal;
             if (due >= 0 && due <= grandTotal.grandTotal) {
-                $('#total_due').text(due.toFixed(3));
+                $('#total_due').text(due.toFixed(2));
                 $('#paid_total_field').removeClass('error_border');
             } else if (due > grandTotal.grandTotal) {
                 $('#paid_total_field').val(0);
-                $('#total_due').text(grandTotal.grandTotal.toFixed(3));
+                $('#total_due').text(grandTotal.grandTotal.toFixed(2));
             } else {
-                $('#paid_total_field').val(grandTotal.grandTotal.toFixed(3));
+                $('#paid_total_field').val(grandTotal.grandTotal.toFixed(2));
                 $('#total_due').text('0.000');
             }
         } else {

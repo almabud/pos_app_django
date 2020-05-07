@@ -34,9 +34,9 @@
                                         <td>{{ order.customer.customer_phone }}</td>
                                         <td>{{ order.sold_by.name }}</td>
                                         <td>{{ order.total_item }}</td>
-                                        <td class="text-right">{{ order.total_billed|floatformat:3 }}</td>
-                                        <td class="text-right">{{ order.paid_total|floatformat:3 }}</td>
-                                        <td class="text-right">{{ order.total_due|floatformat:3 }}</td>
+                                        <td class="text-right">{{ order.total_billed|floatformat:2 }}</td>
+                                        <td class="text-right">{{ order.paid_total|floatformat:2 }}</td>
+                                        <td class="text-right">{{ order.total_due|floatformat:2 }}</td>
                                     </a>
                                 </tr>
                             {% endfor %}

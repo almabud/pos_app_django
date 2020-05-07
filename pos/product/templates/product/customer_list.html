@@ -29,7 +29,7 @@
                                     <td>{{ customer.customer_phone }}</td>
                                     <td>{{ customer.customer_address }}</td>
                                     <td>{{ customer.total_item }}</td>
-                                    <td class="text-right">{{ customer.total_due|floatformat:3 }}</td>
+                                    <td class="text-right">{{ customer.total_due|floatformat:2 }}</td>
                                 </tr>
                             {% endfor %}
                             </tbody>

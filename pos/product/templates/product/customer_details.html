@@ -73,13 +73,13 @@
                                         <li class="list-group-item">Total Item: <span
                                                 id="totalItemTxt">{{ customer_details.total_item }}</span></li>
                                         <li class="list-group-item">Total Billed: <span
-                                                id="totalBilledTxt">{{ customer_details.total_billed|floatformat:3 }}</span>
+                                                id="totalBilledTxt">{{ customer_details.total_billed|floatformat:2 }}</span>
                                         </li>
                                         <li class="list-group-item">Total Paid: <span
-                                                id="totalPaidTxt">{{ customer_details.total_paid|floatformat:3 }}</span>
+                                                id="totalPaidTxt">{{ customer_details.total_paid|floatformat:2 }}</span>
                                         </li>
                                         <li class="list-group-item">Total Due: <span
-                                                id="totalDueTxt">{{ customer_details.total_due|floatformat:3 }}</span>
+                                                id="totalDueTxt">{{ customer_details.total_due|floatformat:2 }}</span>
                                         </li>
                                     </ul>
                                 </div>
@@ -121,9 +121,9 @@
                                             </td>
                                             <td>{{ item.ordered_date|date:'d/m/Y h:i A' }}</td>
                                             <td>{{ item.items }}</td>
-                                            <td>{{ item.billed|floatformat:3 }}</td>
-                                            <td>{{ item.paid_total|floatformat:3 }}</td>
-                                            <td>{{ item.due|floatformat:3 }}</td>
+                                            <td>{{ item.billed|floatformat:2 }}</td>
+                                            <td>{{ item.paid_total|floatformat:2 }}</td>
+                                            <td>{{ item.due|floatformat:2 }}</td>
                                             <td>{{ item.sold_by.name }}</td>
                                         </tr>
                                     {% endfor %}
@@ -168,9 +168,9 @@
                                                     class="hover-active cursor-pointer">
                                                     {{ order.id }}
                                                 </td>
-                                                <td>{{ order.billed|floatformat:3 }}</td>
-                                                <td>{{ item.amount|floatformat:3 }}</td>
-                                                <td>{{ order.due|floatformat:3 }}</td>
+                                                <td>{{ order.billed|floatformat:2 }}</td>
+                                                <td>{{ item.amount|floatformat:2 }}</td>
+                                                <td>{{ order.due|floatformat:2 }}</td>
                                                 <td>{{ item.received_by.name }}</td>
                                             </tr>
                                         {% endfor %}

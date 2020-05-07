@@ -5,7 +5,7 @@ from django.utils.timezone import now
 
 from core.models import User
 from product.manager import ColorManager, ProductManager, SupplierTransactionManager, SupplierManager, CustomerManger, \
-    OrderManager, ProductVariantManager, SizeManager, CategoryManager, OtherCostManager
+    OrderManager, ProductVariantManager, SizeManager, CategoryManager, OtherCostManager, OrderedItemManager
 
 
 class Size(models.Model):
@@ -152,9 +152,11 @@ class OrderedItem(models.Model):
     """This model store products of a particular order """
     product = models.ForeignKey(ProductVariant, related_name='orderedItem_variants', on_delete=models.CASCADE)
     price_per_product = models.FloatField(default=0.0)
+    profit_per_product = models.FloatField(default=0.0)
     discount_percent = models.IntegerField(default=0)
     quantity = models.IntegerField(default=0)
     order = models.ForeignKey(Order, related_name='ordered_items', on_delete=models.CASCADE)
+    objects = OrderedItemManager()
 
     def __str__(self):
         return "Item No- {}".format(self.id)

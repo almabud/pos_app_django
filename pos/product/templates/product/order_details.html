@@ -135,10 +135,10 @@
                                             <td>{{ item.product.gsm }}</td>
                                             <td>{{ item.product.size }}</td>
                                             <td>{{ item.product.color }}</td>
-                                            <td>{{ item.price_per_product|floatformat:3 }}</td>
+                                            <td>{{ item.price_per_product|floatformat:2 }}</td>
                                             <td>{{ item.discount_percent }}</td>
                                             <td>{{ item.quantity }}</td>
-                                            <td class="text-right">{{ item.sub_total|floatformat:3 }}</td>
+                                            <td class="text-right">{{ item.sub_total|floatformat:2 }}</td>
                                         </tr>
                                     {% endfor %}
                                     </tbody>
@@ -150,12 +150,12 @@
                                     <tr>
                                         <td class="text-right">Grand Total =</td>
                                         <td class="text-right"
-                                            id="grandTotalTxt">{{ order_details.total_billed|floatformat:3 }}</td>
+                                            id="grandTotalTxt">{{ order_details.total_billed|floatformat:2 }}</td>
                                     </tr>
                                     <tr>
                                         <td class="text-right">Total due =</td>
                                         <td class="text-right"
-                                            id="totalDueTxt">{{ order_details.total_due|floatformat:3 }}</td>
+                                            id="totalDueTxt">{{ order_details.total_due|floatformat:2 }}</td>
                                     </tr>
                                     </tbody>
                                 </table>
@@ -163,7 +163,7 @@
                                     <tbody>
                                     <tr>
                                         <td>Paid Total =</td>
-                                        <td id="paidTotalTxt">{{ order_details.paid_total|floatformat:3 }}</td>
+                                        <td id="paidTotalTxt">{{ order_details.paid_total|floatformat:2 }}</td>
                                     </tr>
                                     </tbody>
 
@@ -179,7 +179,7 @@
                         <div class="col-md-11 col-12 text-center text-md-left">
                             <h5 class="card-title">Payment History</h5>
                         </div>
-                        {% if order_details.total_due and order_details.total_due > 0 %}
+                        {% if not order_details.is_paid %}
                             <div class="col-md-1 col-12">
                                 <button type="button" class="btn btn-primary btn-block mr-2 float-md-right"
                                         data-toggle="modal" data-target="#payment_modal">
@@ -206,7 +206,7 @@
                                         <tr class="paymentList" data-payment-id='{{ payment.id }}'
                                             data-amount='{{ payment.amount }}'>
                                             <td>{{ payment.date|date:'d/m/Y h:i A' }}</td>
-                                            <td>{{ payment.amount|floatformat:3 }}</td>
+                                            <td>{{ payment.amount|floatformat:2 }}</td>
                                             <td>{{ payment.received_by.name }}</td>
                                         </tr>
                                     {% endfor %}
@@ -240,7 +240,7 @@
                                     <label>Amount</label>
                                     <input onChange="amountChange()" onkeyup="amountChange()" type="number" min="1.00"
                                            name="amount"
-                                           max="{{ order_details.total_due }}"
+                                           max="{{ order_details.total_due|floatformat:2 }}"
                                            step=".01"
                                            required class="form-control"
                                            placeholder="Enter amount"/>
@@ -277,8 +277,8 @@
         function amountChange() {
             var inputItem = $('input[name="amount"]');
             var max = parseFloat(inputItem.attr('max'));
-            if (inputItem.val() >= max) {
-                inputItem.val(max.toFixed(3));
+            if (inputItem.val() > max) {
+                inputItem.val(max.toFixed(2));
             } else if (inputItem.val() < 0) {
                 inputItem.val(0);
             }
@@ -326,9 +326,9 @@
             var totalDue = parseFloat($('#totalDueTxt').text());
             var paidTotal = parseFloat($('#paidTotalTxt').text());
             var paidAmount = parseFloat($('#deleteBtn').data('amount'));
-            $('#totalDueTxt').text((totalDue + paidAmount).toFixed(3));
-            $('#paidTotalTxt').text((paidTotal - paidAmount).toFixed(3));
-            $('input[name="amount"]').attr('max', (totalDue + paidAmount));
+            $('#totalDueTxt').text((totalDue + paidAmount).toFixed(2));
+            $('#paidTotalTxt').text((paidTotal - paidAmount).toFixed(2));
+            $('input[name="amount"]').attr('max', (totalDue + paidAmount).toFixed(2));
             $(deleteRow).remove();
             showToast('Payment has been deleted', 'success');
         }
@@ -353,9 +353,9 @@
             var paidTotal = parseFloat($('#paidTotalTxt').text());
             var deletedAmount = parseFloat($('#deleteBtn').data('amount'));
             grandTotal = grandTotal - deletedAmount;
-            $('#grandTotalTxt').text(grandTotal.toFixed(3));
-            $('#totalDueTxt').text((grandTotal - paidTotal).toFixed(3));
-            $('input[name="amount"]').attr('max', (grandTotal - paidTotal));
+            $('#grandTotalTxt').text(grandTotal.toFixed(2));
+            $('#totalDueTxt').text((grandTotal - paidTotal).toFixed(2));
+            $('input[name="amount"]').attr('max', (grandTotal - paidTotal).toFixed(2));
             $(deleteRow).remove();
             showToast('Item has been deleted', 'success');
         }
