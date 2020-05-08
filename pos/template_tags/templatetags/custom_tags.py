@@ -13,3 +13,8 @@ def active(request, pattern, active_class):
     if re.search(url, request.path):
         return str(active_class)
     return ''
+
+
+@register.filter(name='range')
+def range_list(value):
+    return range(1, int(value) + 1)

@@ -130,3 +130,7 @@
 .cursor-pointer{
     cursor: pointer !important;
 }
+
+.chart-dropdown-active{
+    color:#fd7e14 !important;
+}

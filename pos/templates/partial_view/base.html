@@ -53,6 +53,7 @@
 <script src="{% static 'common/js/paper-dashboard.js' %}" type="text/javascript"></script>
 <script src="{% static '/common/js/plugins/jquery.datepicker2.min.js' %}"></script>
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.js"></script>
+<script src="{% static '/common/demo/demo.js' %}"></script>
 <!-- Paper Dashboard DEMO methods, don't include it in your project! -->
 {% block add_new_js %} {% endblock %}
 <script>
@@ -75,7 +76,6 @@
             delay: 2000
         });
         // Javascript method's body can be found in assets/assets-for-demo/js/demo.js
-        {#demo.initChartsPages();#}
     });
 </script>
 </body>
