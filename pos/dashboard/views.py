@@ -45,4 +45,5 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         kwargs['sell_cost'] = net_profit_and_revenue['net_revenue'] - net_profit_and_revenue['net_profit']
         kwargs['total_due'] = net_order['total_due']
         kwargs['current_month_revenue_profit'] = current_month_statics
+        kwargs['all_year_month_statistics'] = OrderedItem.objects.calculate_profit_revenue_all_month()
         return super().get_context_data(**kwargs)

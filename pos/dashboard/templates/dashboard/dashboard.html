@@ -279,6 +279,40 @@
             </div>
         </div>
     </div>
+    <div class="row product_list">
+        <div class="col col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title text-center text-md-left"> All Statistics </h4>
+                </div>
+                <hr/>
+                <div class="card-body">
+                    <div class="table-responsive product_list_table">
+                        <table class="table table-hover" id="product_list">
+                            <thead class=" text-primary">
+                            <th>Month'Year</th>
+                            <th>Total Item</th>
+                            <th class="text-right">Net Revenue</th>
+                            <th class="text-right">Total Selling cost</th>
+                            <th class="text-right">Net Profit</th>
+                            </thead>
+                            <tbody>
+                            {% for item in all_year_month_statistics %}
+                                <tr>
+                                    <td>{{ item.order__ordered_date__month|month_name }}'{{ item.order__ordered_date__year }}</td>
+                                    <td>{{ item.total_item }}</td>
+                                    <td class="text-right">{{ item.net_revenue|floatformat:2 }}</td>
+                                    <td class="text-right">{{ item.net_revenue|substract:item.net_profit|floatformat:2 }}</td>
+                                    <td class="text-right">{{ item.net_profit|floatformat:2 }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 {% block add_new_js %}
     <script>
@@ -300,7 +334,7 @@
             var netSold = [];
             var netOrder = [];
             var today = new Date();
-            $('#currentMonthStcsLabel').text(`${monthList[today.getMonth()]} statistics`);
+            $('#currentMonthStcsLabel').text(`${monthList[today.getMonth()]}'${today.getFullYear()}`);
             var currentDate = new Date();
             var list = [];
             for (let i = 1; i <= currentDate.getDate(); i++) {
@@ -440,8 +474,7 @@
         }
 
         $(document).ready(function () {
-            //initDatatable();
-            preventAutoFormSubmission();
+            initDatatable();
             initCurrentMonthChart();
             /*----------------------*/
 

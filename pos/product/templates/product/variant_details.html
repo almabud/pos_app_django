@@ -28,6 +28,16 @@
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="form-group">
+                                    <label>
+                                        Per product purchase price
+                                    </label>
+                                    {{ new_stock_form.per_product_purchase_price }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
                                     <label>Select Supplier</label>
                                     {{ new_stock_form.supplier }}
                                 </div>
@@ -499,6 +509,8 @@
                                     <th>Supplier Phone</th>
                                     <th>Supplier Address</th>
                                     <th>Total Supplied</th>
+                                    <th class="text-right">Purchase price</th>
+                                    <th class="text-right">Total purchase price</th>
                                     </thead>
                                     <tbody>
                                     {% for item in variant_details.supplier_list %}
@@ -508,6 +520,8 @@
                                             <td>{{ item.supplier.mobile_no }}</td>
                                             <td>{{ item.supplier.address }}</td>
                                             <td>{{ item.total_supplied }}</td>
+                                            <td class="text-right">{{ item.per_product_purchase_price|floatformat:2 }}</td>
+                                            <td class="text-right">{{ item.total_purchase_price|floatformat:2 }}</td>
                                         </tr>
                                     {% endfor %}
                                     </tbody>
@@ -625,6 +639,8 @@
                 hideSpinner();
                 initErrorText();
                 showToast('Stock has been updated', 'success');
+                window.purchasePrice = data.per_product_purchase_price;
+                $('#purchasePriceTxt').val((data.per_product_purchase_price).toFixed(2));
                 html = `
                   <tr>
                         <td>${data.date}</td>
@@ -632,7 +648,9 @@
                         <td>${data.mobile_no}</td>
                         <td>${data.address}</td>
                         <td>${data.total_supplied}</td>
-                   </tr>`
+                        <td class="text-right">${(data.per_product_purchase_price).toFixed(2)}</td>
+                        <td class="text-right">${(parseFloat(data.per_product_purchase_price) * parseFloat(data.total_supplied)).toFixed(2)}</td>
+                   </tr>`;
                 $('#product_list').prepend(html);
                 $('#newStockModal').modal('hide');
             }

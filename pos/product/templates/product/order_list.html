@@ -8,6 +8,7 @@
                 <div class="card-header">
                     <h4 class="card-title text-center text-md-left"> All Orders </h4>
                 </div>
+                <hr/>
                 <div class="card-body">
                     <div class="table-responsive product_list_table">
                         <table class="table table-hover" id="product_list">
@@ -97,7 +98,7 @@
 
         function confirmDelete() {
             var action = confirm('Do yo really want to delete this order??');
-            if(action){
+            if (action) {
                 deleteOrder();
             }
 

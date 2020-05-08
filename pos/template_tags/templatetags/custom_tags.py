@@ -1,3 +1,5 @@
+import calendar
+
 from django import template
 import re
 
@@ -15,6 +17,11 @@ def active(request, pattern, active_class):
     return ''
 
 
-@register.filter(name='range')
-def range_list(value):
-    return range(1, int(value) + 1)
+@register.filter
+def month_name(month_number):
+    return calendar.month_name[month_number]
+
+
+@register.filter
+def substract(num1, num2):
+    return float(num1) - float(num2)

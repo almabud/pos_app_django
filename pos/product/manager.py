@@ -222,7 +222,8 @@ class ProductManager(models.Manager):
             product = ProductVariant(**fields)
             product.save(using=self.db)
             from product.models import SupplierTransaction
-            supplier = SupplierTransaction(supplier=supplier, product=product, total_supplied=fields['stock_total'])
+            supplier = SupplierTransaction(supplier=supplier, product=product, total_supplied=fields['stock_total'],
+                                           purchase_price=fields['bag_purchase_price'])
             supplier.save(using=self.db)
             return product
         else:
@@ -267,7 +268,10 @@ class ProductVariantManager(models.Manager):
         data = self.model.objects.filter(id=id).select_related('size', 'color', 'category', 'product') \
             .prefetch_related(
             Prefetch('product_variant',
-                     queryset=SupplierTransaction.objects.select_related('supplier').order_by('-date'),
+                     queryset=SupplierTransaction.objects.select_related('supplier').annotate(
+                         total_purchase_price=ExpressionWrapper(F('total_supplied') * F('per_product_purchase_price'),
+                                                                output_field=FloatField())
+                     ).order_by('-date'),
                      to_attr='supplier_list'
                      )
 
@@ -303,7 +307,8 @@ class ProductVariantManager(models.Manager):
             raise DatabaseError("Adding new stock problem in database")
         try:
             supplier = SupplierTransaction(supplier=form_data['supplier'], product=old_variant,
-                                           total_supplied=form_data['new_stock'])
+                                           total_supplied=form_data['new_stock'],
+                                           per_product_purchase_price=form_data['per_product_purchase_price'])
             supplier.save(using=self.db)
         except DatabaseError as e:
             raise DatabaseError("Adding supplier info problem in database")
@@ -332,16 +337,24 @@ class ProductVariantManager(models.Manager):
 class SupplierManager(models.Manager):
     def get_all_supplier(self):
         data = self.model.objects.all().prefetch_related('product_supplier') \
-            .annotate(total_supplied=Coalesce(Sum('product_supplier__total_supplied'), Value(0)))
+            .annotate(
+            total_supplied=Coalesce(Sum('product_supplier__total_supplied'), Value(0)),
+            total_price=Sum(F('product_supplier__total_supplied') * F('product_supplier__per_product_purchase_price'),
+                            output_field=FloatField())
+        ).order_by(
+            '-total_supplied')
         return data
 
     def get_supplier_details(self, id):
         from product.models import SupplierTransaction
         data = self.model.objects.filter(id=id).prefetch_related(
-            Prefetch('product_supplier', queryset=SupplierTransaction.objects.select_related(
-                'product', 'product__size', 'product__color', 'product__category', 'product__product').order_by(
-                '-date'), to_attr='product_list')
-        ).first()
+            Prefetch('product_supplier',
+                     queryset=SupplierTransaction.objects.select_related(
+                         'product', 'product__size', 'product__color', 'product__category',
+                         'product__product').annotate(
+                         total_price=ExpressionWrapper(F('per_product_purchase_price') * F('total_supplied'),
+                                                       output_field=FloatField())).order_by('-date'),
+                     to_attr='product_list')).first()
         return data
 
     @transaction.atomic
@@ -482,226 +495,219 @@ class OrderManager(models.Manager):
         ).order_by('ordered_date__day')
         return data
 
+    def get_all_order(self):
+        data = self.model.objects.all().prefetch_related('ordered_items').select_related('customer', 'sold_by') \
+            .annotate(total_item=Coalesce(Sum('ordered_items__quantity'), Value(0)),
+                      total_billed=Sum(
+                          (F('ordered_items__quantity') * F('ordered_items__price_per_product'))
+                          * (Value(1) - (F('ordered_items__discount_percent') / 100.00)),
+                          output_field=FloatField()),
+                      ).annotate(
+            total_due=Case(
+                When(is_paid=False,
+                     then=Sum((F('ordered_items__quantity')
+                               * F('ordered_items__price_per_product'))
+                              * (Value(1) - (F('ordered_items__discount_percent') / 100.00))
+                              ) - F('paid_total')),
+                default=Value(0),
+                output_field=FloatField()
+            )).order_by(
+            '-total_due')
+        return data
 
-def get_all_order(self):
-    data = self.model.objects.all().prefetch_related('ordered_items').select_related('customer', 'sold_by') \
-        .annotate(total_item=Coalesce(Sum('ordered_items__quantity'), Value(0)),
-                  total_billed=Sum(
-                      (F('ordered_items__quantity') * F('ordered_items__price_per_product'))
-                      * (Value(1) - (F('ordered_items__discount_percent') / 100.00)),
-                      output_field=FloatField()),
-                  ).annotate(
-        total_due=Case(
-            When(is_paid=False,
-                 then=Sum((F('ordered_items__quantity')
-                           * F('ordered_items__price_per_product'))
-                          * (Value(1) - (F('ordered_items__discount_percent') / 100.00))
-                          ) - F('paid_total')),
-            default=Value(0),
-            output_field=FloatField()
-        )).order_by(
-        '-total_due')
-    return data
+    def get_order_detail(self, order_id):
+        from product.models import OrderedItem
+        from product.models import PaymentHistory
+        data = self.model.objects.filter(pk=order_id).prefetch_related(
+            Prefetch('ordered_items',
+                     queryset=OrderedItem.objects.annotate(
+                         sub_total=ExpressionWrapper(F('quantity') * F('price_per_product') * (
+                                 Value(1) - (F('discount_percent') / 100.00)), output_field=FloatField()))
+                     .select_related('product', 'product__product', 'product__category', 'product__color',
+                                     'product__size'),
+                     to_attr='items'
+                     ),
+            Prefetch('payment_history',
+                     queryset=PaymentHistory.objects.select_related('received_by').order_by('-date'),
+                     to_attr='order_payment_history'
+                     )
+        ).select_related(
+            'customer', 'sold_by') \
+            .annotate(
+            total_item=Coalesce(Sum('ordered_items__quantity'), Value(0)),
+            total_billed=Coalesce(Sum(
+                (F('ordered_items__quantity') * F('ordered_items__price_per_product'))
+                * (Value(1) - (F('ordered_items__discount_percent') / 100.00)),
+                output_field=FloatField()), Value(0)),
+        ).annotate(
+            total_due=Case(
+                When(is_paid=False,
+                     then=Sum((F('ordered_items__quantity')
+                               * F('ordered_items__price_per_product'))
+                              * (Value(1) - (F('ordered_items__discount_percent') / 100.00))
+                              ) - F('paid_total')),
+                default=Value(0),
+                output_field=FloatField()
+            )).first()
+        return data
 
+    @transaction.atomic
+    def crate_new_order(self, order=None, items=None):
+        if not order or not items:
+            raise ValueError("Order && items are missing")
+        """Save the new customer"""
+        if 'customer' not in order:
+            new_customer_data = {
+                'customer_name': order['customer_name'],
+                'customer_phone': order['customer_phone'],
+                'customer_address': order['customer_address']
+            }
+            del order['customer_name'],
+            del order['customer_phone'],
+            del order['customer_address']
+            from product.models import Customer
+            try:
+                new_customer = Customer(**new_customer_data)
+                new_customer.save(using=self.db)
+            except DatabaseError as e:
+                raise DatabaseError(e)
+            order['customer'] = new_customer
 
-def get_order_detail(self, order_id):
-    from product.models import OrderedItem
-    from product.models import PaymentHistory
-    data = self.model.objects.filter(pk=order_id).prefetch_related(
-        Prefetch('ordered_items',
-                 queryset=OrderedItem.objects.annotate(
-                     sub_total=ExpressionWrapper(F('quantity') * F('price_per_product') * (
-                             Value(1) - (F('discount_percent') / 100.00)), output_field=FloatField()))
-                 .select_related('product', 'product__product', 'product__category', 'product__color',
-                                 'product__size'),
-                 to_attr='items'
-                 ),
-        Prefetch('payment_history',
-                 queryset=PaymentHistory.objects.select_related('received_by').order_by('-date'),
-                 to_attr='order_payment_history'
-                 )
-    ).select_related(
-        'customer', 'sold_by') \
-        .annotate(
-        total_item=Coalesce(Sum('ordered_items__quantity'), Value(0)),
-        total_billed=Coalesce(Sum(
-            (F('ordered_items__quantity') * F('ordered_items__price_per_product'))
-            * (Value(1) - (F('ordered_items__discount_percent') / 100.00)),
-            output_field=FloatField()), Value(0)),
-    ).annotate(
-        total_due=Case(
-            When(is_paid=False,
-                 then=Sum((F('ordered_items__quantity')
-                           * F('ordered_items__price_per_product'))
-                          * (Value(1) - (F('ordered_items__discount_percent') / 100.00))
-                          ) - F('paid_total')),
-            default=Value(0),
-            output_field=FloatField()
-        )).first()
-    return data
-
-
-@transaction.atomic
-def crate_new_order(self, order=None, items=None):
-    if not order or not items:
-        raise ValueError("Order && items are missing")
-    """Save the new customer"""
-    if 'customer' not in order:
-        new_customer_data = {
-            'customer_name': order['customer_name'],
-            'customer_phone': order['customer_phone'],
-            'customer_address': order['customer_address']
-        }
-        del order['customer_name'],
-        del order['customer_phone'],
-        del order['customer_address']
-        from product.models import Customer
+        """Save the new order"""
         try:
-            new_customer = Customer(**new_customer_data)
-            new_customer.save(using=self.db)
+            total_billed = 0
+            for item in items:
+                total_billed += item['price_per_product'] * item['quantity'] * (1 - (item['discount_percent'] / 100.0))
+            if round(total_billed, 2) == round(order['paid_total'], 2):
+                order['is_paid'] = True
+            new_order = self.model(**order)
+            new_order.save(using=self.db)
         except DatabaseError as e:
-            raise DatabaseError(e)
-        order['customer'] = new_customer
+            raise DatabaseError("Database technical issue")
 
-    """Save the new order"""
-    try:
-        total_billed = 0
-        for item in items:
-            total_billed += item['price_per_product'] * item['quantity'] * (1 - (item['discount_percent'] / 100.0))
-        if round(total_billed, 2) == round(order['paid_total'], 2):
-            order['is_paid'] = True
-        new_order = self.model(**order)
-        new_order.save(using=self.db)
-    except DatabaseError as e:
-        raise DatabaseError("Database technical issue")
+        from product.models import OrderedItem
+        from product.models import ProductVariant
+        """Save the paid total as history"""
+        if order['paid_total'] is not 0 or order['paid_total']:
+            try:
+                from product.models import PaymentHistory
+                new_payment = PaymentHistory(order=new_order, amount=order['paid_total'], received_by=order['sold_by'])
+                new_payment.save(using=self.db)
+            except DatabaseError as e:
+                raise DatabaseError("Database technical issue")
+        """Save the items of the order"""
+        try:
+            new_item_queryset = list(ProductVariant.objects.filter(id__in=[i['product'] for i in items]))
+        except DatabaseError as e:
+            raise DatabaseError("Database technical issue")
+        new_item_list = [OrderedItem(
+            product=new_item_queryset[i],
+            price_per_product=items[i]['price_per_product'],
+            discount_percent=items[i]['discount_percent'],
+            profit_per_product=new_item_queryset[i].profit,
+            quantity=items[i]['quantity'],
+            order=new_order
+        ) for i in range(len(items))]
 
-    from product.models import OrderedItem
-    from product.models import ProductVariant
-    """Save the paid total as history"""
-    if order['paid_total'] is not 0 or order['paid_total']:
+        try:
+            OrderedItem.objects.bulk_create(new_item_list)
+        except DatabaseError as e:
+            raise DatabaseError("Database technical issue")
+
+        """Update the stock of the items"""
+        for i in range(len(items)):
+            new_stock = new_item_queryset[i].stock_total - items[i]['quantity']
+            new_item_queryset[i].stock_total = new_stock if new_stock >= 0 else 0
+
+        try:
+            ProductVariant.objects.bulk_update(new_item_queryset, ['stock_total'])
+        except DatabaseError as e:
+            raise DatabaseError("Database technical issue")
+
+        return new_order
+
+    @transaction.atomic
+    def make_payment(self, order_id, amount, received_by):
+        """This method is responsible for add new payment to payment history"""
+        if not order_id or not amount or not received_by:
+            raise ValueError("All field is required")
+        order = self.model.objects.filter(id=order_id).prefetch_related('ordered_items').annotate(
+            total_billed=Sum(
+                (F('ordered_items__quantity') * F('ordered_items__price_per_product'))
+                * (Value(1) - (F('ordered_items__discount_percent') / 100.00)),
+                output_field=FloatField()),
+        ).first()
+        order.paid_total = order.paid_total + float(amount)
+        if round(order.paid_total, 2) == round(order.total_billed, 2):
+            order.is_paid = True
+        try:
+            order.save(using=self.db)
+        except DatabaseError as e:
+            raise DatabaseError("Database technical issue")
+
         try:
             from product.models import PaymentHistory
-            new_payment = PaymentHistory(order=new_order, amount=order['paid_total'], received_by=order['sold_by'])
+            new_payment = PaymentHistory(order=order, amount=amount, received_by=received_by)
             new_payment.save(using=self.db)
         except DatabaseError as e:
             raise DatabaseError("Database technical issue")
-    """Save the items of the order"""
-    try:
-        new_item_queryset = list(ProductVariant.objects.filter(id__in=[i['product'] for i in items]))
-    except DatabaseError as e:
-        raise DatabaseError("Database technical issue")
-    new_item_list = [OrderedItem(
-        product=new_item_queryset[i],
-        price_per_product=items[i]['price_per_product'],
-        discount_percent=items[i]['discount_percent'],
-        profit_per_product=new_item_queryset[i].profit,
-        quantity=items[i]['quantity'],
-        order=new_order
-    ) for i in range(len(items))]
+        return new_payment
 
-    try:
-        OrderedItem.objects.bulk_create(new_item_list)
-    except DatabaseError as e:
-        raise DatabaseError("Database technical issue")
+    @transaction.atomic
+    def delete_order(self, id):
+        if id is None:
+            raise ValueError("Id is required")
+        try:
+            from product.models import OrderedItem
+            order = self.model.objects.filter(id=id).prefetch_related(
+                Prefetch(
+                    'ordered_items',
+                    queryset=OrderedItem.objects.select_related('product'),
+                    to_attr='items'
+                )
+            ).first()
+            product_variant = []
+            for item in order.items:
+                item.product.stock_total = item.product.stock_total + item.quantity
+                product_variant.append(item.product)
+            from product.models import ProductVariant
+            ProductVariant.objects.bulk_update(product_variant, ['stock_total'])
+            order.delete()
+        except DatabaseError as e:
+            raise DatabaseError("Technical problem to delete order")
+        return True
 
-    """Update the stock of the items"""
-    for i in range(len(items)):
-        new_stock = new_item_queryset[i].stock_total - items[i]['quantity']
-        new_item_queryset[i].stock_total = new_stock if new_stock >= 0 else 0
+    @transaction.atomic
+    def delete_payment(self, id):
+        if id is None:
+            raise ValueError("Id is required")
+        try:
+            from product.models import PaymentHistory
+            payment = PaymentHistory.objects.get(id=id)
+            order = payment.order
+            order.paid_total = order.paid_total - payment.amount
+            order.save(using=self.db)
+            payment.delete()
+        except DatabaseError as e:
+            raise DatabaseError("Technical problem to delete order")
+        return True
 
-    try:
-        ProductVariant.objects.bulk_update(new_item_queryset, ['stock_total'])
-    except DatabaseError as e:
-        raise DatabaseError("Database technical issue")
-
-    return new_order
-
-
-@transaction.atomic
-def make_payment(self, order_id, amount, received_by):
-    """This method is responsible for add new payment to payment history"""
-    if not order_id or not amount or not received_by:
-        raise ValueError("All field is required")
-    order = self.model.objects.filter(id=order_id).prefetch_related('ordered_items').annotate(
-        total_billed=Sum(
-            (F('ordered_items__quantity') * F('ordered_items__price_per_product'))
-            * (Value(1) - (F('ordered_items__discount_percent') / 100.00)),
-            output_field=FloatField()),
-    ).first()
-    order.paid_total = order.paid_total + float(amount)
-    if round(order.paid_total, 2) == round(order.total_billed, 2):
-        order.is_paid = True
-    try:
-        order.save(using=self.db)
-    except DatabaseError as e:
-        raise DatabaseError("Database technical issue")
-
-    try:
-        from product.models import PaymentHistory
-        new_payment = PaymentHistory(order=order, amount=amount, received_by=received_by)
-        new_payment.save(using=self.db)
-    except DatabaseError as e:
-        raise DatabaseError("Database technical issue")
-    return new_payment
-
-
-@transaction.atomic
-def delete_order(self, id):
-    if id is None:
-        raise ValueError("Id is required")
-    try:
-        from product.models import OrderedItem
-        order = self.model.objects.filter(id=id).prefetch_related(
-            Prefetch(
-                'ordered_items',
-                queryset=OrderedItem.objects.select_related('product'),
-                to_attr='items'
-            )
-        ).first()
-        product_variant = []
-        for item in order.items:
-            item.product.stock_total = item.product.stock_total + item.quantity
-            product_variant.append(item.product)
-        from product.models import ProductVariant
-        ProductVariant.objects.bulk_update(product_variant, ['stock_total'])
-        order.delete()
-    except DatabaseError as e:
-        raise DatabaseError("Technical problem to delete order")
-    return True
-
-
-@transaction.atomic
-def delete_payment(self, id):
-    if id is None:
-        raise ValueError("Id is required")
-    try:
-        from product.models import PaymentHistory
-        payment = PaymentHistory.objects.get(id=id)
-        order = payment.order
-        order.paid_total = order.paid_total - payment.amount
-        order.save(using=self.db)
-        payment.delete()
-    except DatabaseError as e:
-        raise DatabaseError("Technical problem to delete order")
-    return True
-
-
-@transaction.atomic
-def delete_ordered_item(self, id):
-    if id is None:
-        raise ValueError("Item Id is required")
-    try:
-        from product.models import OrderedItem
-        item = OrderedItem.objects.get(id=id)
-        if OrderedItem.objects.filter(order=item.order).count() <= 1:
-            raise ValidationError('This order can not be deleted as a order need at least 1 item.')
-        product_variant = item.product
-        product_variant.stock_total = product_variant.stock_total + item.quantity
-        product_variant.save(using=self.db)
-        item.delete()
-    except DatabaseError as e:
-        raise DatabaseError("Technical problem raised while deleting item")
-    return True
+    @transaction.atomic
+    def delete_ordered_item(self, id):
+        if id is None:
+            raise ValueError("Item Id is required")
+        try:
+            from product.models import OrderedItem
+            item = OrderedItem.objects.get(id=id)
+            if OrderedItem.objects.filter(order=item.order).count() <= 1:
+                raise ValidationError('This order can not be deleted as a order need at least 1 item.')
+            product_variant = item.product
+            product_variant.stock_total = product_variant.stock_total + item.quantity
+            product_variant.save(using=self.db)
+            item.delete()
+        except DatabaseError as e:
+            raise DatabaseError("Technical problem raised while deleting item")
+        return True
 
 
 class OrderedItemManager(models.Manager):
@@ -732,6 +738,18 @@ class OrderedItemManager(models.Manager):
             net_revenue=Sum(F('price_per_product') * F('quantity') * (Value(1) - (F('discount_percent') / 100.0)),
                             output_field=FloatField())
         ).order_by('order__ordered_date__day')
+        return data
+
+    def calculate_profit_revenue_all_month(self):
+        data = self.model.objects.select_related('order').values('order__ordered_date__year',
+                                                                 'order__ordered_date__month').annotate(
+            total_item=Coalesce(Sum('quantity'), Value(0)),
+            net_profit=Sum(F('profit_per_product') * F('quantity') - (
+                    F('price_per_product') * F('quantity') * F('discount_percent') / 100.0),
+                           output_field=FloatField()),
+            net_revenue=Sum(F('price_per_product') * F('quantity') * (Value(1) - (F('discount_percent') / 100.0)),
+                            output_field=FloatField())
+        ).order_by('order__ordered_date__year', 'order__ordered_date__month')
         return data
 
 

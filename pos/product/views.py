@@ -198,6 +198,7 @@ class VariantDetails(TemplateView):
                     return JsonResponse({'date': date, 'name': cleaned_data['supplier'].name,
                                          'mobile_no': cleaned_data['supplier'].mobile_no,
                                          'total_supplied': supplier.total_supplied,
+                                         'per_product_purchase_price': supplier.per_product_purchase_price,
                                          'address': cleaned_data['supplier'].address}, status=201)
                 else:
                     return JsonResponse(form.errors, status=400)

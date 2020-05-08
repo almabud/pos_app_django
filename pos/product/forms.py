@@ -60,6 +60,7 @@ class VariantForm(forms.ModelForm):
 class NewStockForm(forms.Form):
     supplier = forms.ModelChoiceField(queryset=Supplier.objects.all(),
                                       widget=forms.Select(attrs={'class': 'form-control'}))
+    per_product_purchase_price = forms.IntegerField(widget=forms.NumberInput(attrs={'class': 'form-control'}))
     new_stock = forms.IntegerField(widget=forms.NumberInput(attrs={'class': 'form-control'}))
 
 
