@@ -24,11 +24,12 @@ urlpatterns = [
                   path('admin/', admin.site.urls),
                   path('dashboard/', include('dashboard.urls', namespace='dashboard')),
                   path('product/', include('product.urls', namespace='product')),
+                  path('shareholders/', include('investor.urls', namespace='investor')),
               ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-
 
 if settings.DEBUG:
     import debug_toolbar
+
     urlpatterns = [
-        path('__debug__/', include(debug_toolbar.urls)),
-    ] + urlpatterns
+                      path('__debug__/', include(debug_toolbar.urls)),
+                  ] + urlpatterns

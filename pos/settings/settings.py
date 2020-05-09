@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'dashboard',
     'template_tags',
     'product',
+    'investor',
 
     # 3rd party apps
     'django_extensions',
