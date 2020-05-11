@@ -189,7 +189,7 @@
             })
         }
 
-        function otherListContextMenu() {
+        function investorListContextMenu() {
             $('.investor_row').on('contextmenu', function (e) {
                 e.preventDefault();
                 $('#contextMenu').css({
@@ -236,7 +236,7 @@
             initAddForm();
             submitForm();
             /*----------------------*/
-            otherListContextMenu();
+            investorListContextMenu();
             $(document).click(function () {
                 $('#contextMenu').removeClass('is-open');
             });

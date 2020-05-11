@@ -725,9 +725,7 @@ class OrderedItemManager(models.Manager):
         )
         return data
 
-    def calculate_net_profit_and_revenue_current_month(self):
-        present_month = localtime(now()).month
-        present_year = localtime(now()).year
+    def calculate_net_profit_and_revenue_current_month(self, present_month=localtime(now()).month,  present_year=localtime(now()).year):
         data = self.model.objects.select_related('order').filter(order__ordered_date__month=present_month,
                                                                  order__ordered_date__year=present_year).values(
             'order__ordered_date__day').annotate(
@@ -749,7 +747,7 @@ class OrderedItemManager(models.Manager):
                            output_field=FloatField()),
             net_revenue=Sum(F('price_per_product') * F('quantity') * (Value(1) - (F('discount_percent') / 100.0)),
                             output_field=FloatField())
-        ).order_by('order__ordered_date__year', 'order__ordered_date__month')
+        ).order_by('-order__ordered_date__year', '-order__ordered_date__month')
         return data
 
 

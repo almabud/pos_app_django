@@ -18,12 +18,7 @@ class InvestorForm(forms.ModelForm):
 class InvestForm(forms.ModelForm):
     class Meta:
         model = InvestHistory
-        fields = ['amount', 'share_holder']
+        fields = ['amount']
         widgets = {
-            'amount': NumberInput(attrs={'class': 'form-control'}),
-            'share_holder': Select(attrs={'class': 'form-control'})
+            'amount': NumberInput(attrs={'class': 'form-control'})
         }
-
-    def __init__(self, *args, **kwargs):
-        super(InvestForm, self).__init__(*args, **kwargs)
-        self.fields['share_holder'].required = False

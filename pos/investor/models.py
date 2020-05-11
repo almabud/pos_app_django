@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.timezone import now
 
-from investor.manager import InvestorManager
+from investor.manager import InvestorManager, InvestHistoryManager
 
 
 class ShareHolder(models.Model):
@@ -18,11 +18,13 @@ class InvestHistory(models.Model):
     amount = models.FloatField()
     share_holder = models.ForeignKey('ShareHolder', related_name='investor_history', on_delete=models.CASCADE)
 
+    objects = InvestHistoryManager()
+
 
 class ShareHolderReleaseHistory(models.Model):
     releasing_date = models.DateTimeField(default=now)
     joining_date = models.DateTimeField()
     name = models.CharField(max_length=100)
-    phone_no = models.CharField(max_length=11, unique=True)
+    phone_no = models.CharField(max_length=11)
     address = models.CharField(max_length=255, blank=True, null=True)
     total_investment = models.FloatField(default=0.0)
