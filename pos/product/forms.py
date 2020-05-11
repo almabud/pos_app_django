@@ -293,16 +293,21 @@ class BaseItemFormSet(BaseFormSet):
 class OtherCostForm(forms.ModelForm):
     class Meta:
         model = OtherCost
-        fields = ['shop_rent', 'shop_rent_per_product', 'electricity_bill', 'electricity_bill_per_product', 'others_bill', 'others_bill_per_product']
+        fields = ['shop_rent', 'shop_rent_per_product', 'electricity_bill', 'electricity_bill_per_product',
+                  'employee_cost', 'employee_cost_per_product', 'others_bill', 'others_bill_per_product']
         widgets = {
             'shop_rent': NumberInput(
-                attrs={'class': 'form-control', 'id': 'shopRentInput' }),
+                attrs={'class': 'form-control', 'id': 'shopRentInput'}),
             'shop_rent_per_product': NumberInput(
                 attrs={'class': 'form-control', 'id': 'shopRentPerProductInput'}),
             'electricity_bill': NumberInput(
                 attrs={'class': 'form-control', 'id': 'electricityBillInput'}),
             'electricity_bill_per_product': NumberInput(
                 attrs={'class': 'form-control', 'id': 'electricityBillPerProductInput'}),
+            'employee_cost': NumberInput(
+                attrs={'class': 'form-control', 'id': 'employeeCostInput'}),
+            'employee_cost_per_product': NumberInput(
+                attrs={'class': 'form-control', 'id': 'employeeCostPerProductInput'}),
             'others_bill': NumberInput(
                 attrs={'class': 'form-control', 'id': 'otherBillInput'}),
             'others_bill_per_product': NumberInput(

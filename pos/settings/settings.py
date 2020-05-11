@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'template_tags',
     'product',
     'investor',
+    'liabilities',
 
     # 3rd party apps
     'django_extensions',

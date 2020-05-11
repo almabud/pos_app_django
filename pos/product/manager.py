@@ -725,7 +725,8 @@ class OrderedItemManager(models.Manager):
         )
         return data
 
-    def calculate_net_profit_and_revenue_current_month(self, present_month=localtime(now()).month,  present_year=localtime(now()).year):
+    def calculate_net_profit_and_revenue_current_month(self, present_month=localtime(now()).month,
+                                                       present_year=localtime(now()).year):
         data = self.model.objects.select_related('order').filter(order__ordered_date__month=present_month,
                                                                  order__ordered_date__year=present_year).values(
             'order__ordered_date__day').annotate(
@@ -757,7 +758,8 @@ class OtherCostManager(models.Manager):
         current_year = now().year
         data = self.model.objects.filter(date__month=current_month, date__year=current_year).aggregate(
             others_bill=Coalesce(Sum(
-                F('shop_rent_per_product') + F('electricity_bill_per_product') + F('others_bill_per_product'),
+                F('shop_rent_per_product') + F('electricity_bill_per_product') + F('others_bill_per_product') + F(
+                    'employee_cost_per_product'),
                 output_field=FloatField()), Value(0, output_field=FloatField())))
         return data
 
@@ -778,6 +780,8 @@ class OtherCostManager(models.Manager):
             old_data.electricity_bill_per_product = data['electricity_bill_per_product']
             old_data.others_bill = data['others_bill']
             old_data.others_bill_per_product = data['others_bill_per_product']
+            old_data.employee_cost = data['employee_cost']
+            old_data.employee_cost_per_product = data['employee_cost_per_product']
             old_data.save(using=self.db)
         except DatabaseError as e:
             raise DatabaseError('Error occurred while updating utility bill')

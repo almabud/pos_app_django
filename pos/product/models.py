@@ -170,6 +170,8 @@ class OtherCost(models.Model):
     shop_rent_per_product = models.FloatField(default=0.0)
     electricity_bill = models.FloatField(default=0.0)
     electricity_bill_per_product = models.FloatField(default=0.0)
+    employee_cost = models.FloatField(default=0.0)
+    employee_cost_per_product = models.FloatField(default=0.0)
     others_bill = models.FloatField(default=0.0)
     others_bill_per_product = models.FloatField(default=0.0)
 

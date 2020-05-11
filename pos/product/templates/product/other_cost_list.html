@@ -31,6 +31,8 @@
                             <th>Per product shop rent cost</th>
                             <th>Electricity bill</th>
                             <th>Per product electricity cost</th>
+                            <th>Employee cost</th>
+                            <th>Per product employee cost</th>
                             <th>Other Cost</th>
                             <th>Per product other cost</th>
                             </thead>
@@ -43,6 +45,8 @@
                                     <td>{{ other_cost.shop_rent_per_product|floatformat:2 }}</td>
                                     <td>{{ other_cost.electricity_bill|floatformat:2 }}</td>
                                     <td>{{ other_cost.electricity_bill_per_product|floatformat:2 }}</td>
+                                    <td>{{ other_cost.employee_cost|floatformat:2 }}</td>
+                                    <td>{{ other_cost.employee_cost_per_product|floatformat:2 }}</td>
                                     <td>{{ other_cost.others_bill|floatformat:2 }}</td>
                                     <td>{{ other_cost.others_bill_per_product|floatformat:2 }}</td>
                                 </tr>
@@ -103,6 +107,24 @@
                                         <span class="error_text" id="electricityBillPerProductErrorTxt"></span>
                                     </label>
                                     {{ form.electricity_bill_per_product }}
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label>
+                                        Employee cost
+                                        <span class="error_text" id="employeeCostErrorTxt"></span>
+                                    </label>
+                                    {{ form.employee_cost }}
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label>
+                                        Per product employee cost
+                                        <span class="error_text" id="employeeCostPerProductTxt"></span>
+                                    </label>
+                                    {{ form.employee_cost_per_product }}
                                 </div>
                             </div>
                             <div class="col-md-12">
@@ -185,8 +207,10 @@
                 $('#shopRentPerProductInput').val($(tds[3]).text());
                 $('#electricityBillInput').val($(tds[4]).text());
                 $('#electricityBillPerProductInput').val($(tds[5]).text());
-                $('#otherBillInput').val($(tds[6]).text());
-                $('#otherBillPerProductInput').val($(tds[7]).text());
+                $('#employeeCostInput').val($(tds[6]).text());
+                $('#employeeCostPerProductInput').val($(tds[7]).text());
+                $('#otherBillInput').val($(tds[8]).text());
+                $('#otherBillPerProductInput').val($(tds[9]).text());
             });
         }
 
@@ -210,8 +234,10 @@
                             $(tds[3]).text($('#shopRentPerProductInput').val());
                             $(tds[4]).text($('#electricityBillInput').val());
                             $(tds[5]).text($('#electricityBillPerProductInput').val());
-                            $(tds[6]).text($('#otherBillInput').val());
-                            $(tds[7]).text($('#otherBillPerProductInput').val());
+                            $(tds[6]).text($('#employeeCostInput').val());
+                            $(tds[7]).text($('#employeeCostPerProductInput').val());
+                            $(tds[8]).text($('#otherBillInput').val());
+                            $(tds[9]).text($('#otherBillPerProductInput').val());
                             $('#formModal').modal('toggle');
                         },
                         error: function (data, textStatus, jqXHR) {

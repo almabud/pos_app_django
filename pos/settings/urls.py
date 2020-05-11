@@ -25,6 +25,7 @@ urlpatterns = [
                   path('dashboard/', include('dashboard.urls', namespace='dashboard')),
                   path('product/', include('product.urls', namespace='product')),
                   path('shareholders/', include('investor.urls', namespace='investor')),
+                  path('liabilities/', include('liabilities.urls', namespace='liabilities')),
               ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 if settings.DEBUG:
