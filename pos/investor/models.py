@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.timezone import now
 
-from investor.manager import InvestorManager, InvestHistoryManager
+from investor.manager import InvestorManager, InvestHistoryManager, ReleaseHistoryManager
 
 
 class ShareHolder(models.Model):
@@ -28,3 +28,5 @@ class ShareHolderReleaseHistory(models.Model):
     phone_no = models.CharField(max_length=11)
     address = models.CharField(max_length=255, blank=True, null=True)
     total_investment = models.FloatField(default=0.0)
+
+    objects = ReleaseHistoryManager()

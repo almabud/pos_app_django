@@ -92,6 +92,18 @@
               <p>Other costs</p>
             </a>
          </li>
+         <li class="{% active request 'investor:investors' 'active' %}">
+            <a href="{% url 'investor:investors' %}">
+              <i class="nc-icon nc-badge"></i>
+              <p>Shareholders</p>
+            </a>
+         </li>
+         <li class="{% active request 'investor:release_history' 'active' %}">
+            <a href="{% url 'investor:release_history' %}">
+              <i class="nc-icon nc-badge"></i>
+              <p>Released history</p>
+            </a>
+         </li>
         </ul>
       </div>
     </div>

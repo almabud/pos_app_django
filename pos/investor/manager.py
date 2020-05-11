@@ -5,8 +5,17 @@ from django.db.models.functions import Coalesce, Extract, ExtractMonth, Cast, Tr
 from django.utils.timezone import localtime, now
 
 
-class InvestorHistoryManager(object):
-    pass
+class ReleaseHistoryManager(models.Manager):
+    def get_all_release_history(self):
+        data = self.model.objects.all()
+        return data
+
+    def delete_release_history(self, id):
+        try:
+            self.model.objects.get(id=id).delete()
+        except DatabaseError as e:
+            raise DatabaseError("Technical Problem while deleting release history")
+        return True
 
 
 class InvestorManager(models.Manager):

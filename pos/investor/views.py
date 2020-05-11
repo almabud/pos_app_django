@@ -12,7 +12,7 @@ from django.utils.timezone import localtime, now
 from django.views.generic import TemplateView
 
 from investor.form import InvestorForm, InvestForm
-from investor.models import ShareHolder, InvestHistory
+from investor.models import ShareHolder, InvestHistory, ShareHolderReleaseHistory
 from product.models import OrderedItem
 
 
@@ -55,7 +55,26 @@ class InvestorList(TemplateView):
                         'address': new_investor.address
                     }
                     return JsonResponse(new_investor_data, status=201, safe=False)
-                return JsonResponse("error", status=400)
+                return JsonResponse("error", status=400, safe=False)
+
+
+class ReleaseHistory(TemplateView):
+    template_name = 'investor/relase_history.html'
+
+    def get_context_data(self, **kwargs):
+        kwargs['release_histories'] = ShareHolderReleaseHistory.objects.get_all_release_history()
+        return super().get_context_data(**kwargs)
+
+    def post(self, request):
+        if request.is_ajax():
+            if 'id' in request.POST:
+                id = request.POST['id']
+            else:
+                return JsonResponse("error", status=400, safe=False)
+            if ShareHolderReleaseHistory.objects.delete_release_history(id):
+                return JsonResponse("success", status=201, safe=False)
+            else:
+                return JsonResponse("error", status=400, safe=False)
 
 
 class JsonSerializer(JSONEncoder):
