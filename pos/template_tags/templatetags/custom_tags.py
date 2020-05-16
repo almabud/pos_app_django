@@ -11,7 +11,6 @@ register = template.Library()
 @register.simple_tag
 def active(request, pattern, active_class):
     url = reverse(pattern)
-    print(url)
     if re.search(url, request.path):
         return str(active_class)
     return ''

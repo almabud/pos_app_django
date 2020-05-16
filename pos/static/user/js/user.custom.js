@@ -13,6 +13,24 @@ function checkFieldError() {
         emailError = '';
         $('#id_email').removeClass('error_border');
     }
+    if ($('#phone_no1_error').length) {
+        var phoneNo1error = JSON.parse($('#phone_no1_error').text());
+        $('#phone_no1_error_text').text(phoneNo1error);
+        $('#id_phone_no1').addClass('error_border');
+
+    } else {
+        phoneNo1error = '';
+        $('#id_phone_no1').removeClass('error_border');
+    }
+    if ($('#phone_no2_error').length) {
+        var phoneNo2error = JSON.parse($('#phone_no2_error').text());
+        $('#phone_no2_error_text').text(phoneNo2error);
+        $('#id_phone_no2').addClass('error_border');
+
+    } else {
+        phoneNo2error = '';
+        $('#id_phone_no2').removeClass('error_border');
+    }
 
     if ($('#name_error').length) {
         var nameError = JSON.parse($('#name_error').text());

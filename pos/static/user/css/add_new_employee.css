@@ -40,4 +40,13 @@ input[type=number] {
     cursor: pointer !important;
 }
 
-/*# sourceMappingURL=add_new_employee.css.map */
+.permission-title{
+    background: #51cbce;
+    padding: 10px 10px 1px;
+}
+#deactivateBtn:hover{
+    background: #e61024 !important;
+}
+#activateBtn:hover{
+    background: #218838 !important;
+}

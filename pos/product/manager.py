@@ -41,7 +41,7 @@ class SizeManager(models.Manager):
     def delete_size(self, id):
         from product.models import ProductVariant
         from product.models import OrderedItem
-        will_delete_size = self.model.objects.filter(id=id).prefetch_related(
+        will_delete_size = self.filter(id=id).prefetch_related(
             Prefetch(
                 'product_size',
                 queryset=ProductVariant.objects.prefetch_related(
@@ -83,7 +83,7 @@ class CategoryManager(models.Manager):
     def delete_category(self, id):
         from product.models import ProductVariant
         from product.models import OrderedItem
-        will_delete_category = self.model.objects.filter(id=id).prefetch_related(
+        will_delete_category = self.filter(id=id).prefetch_related(
             Prefetch(
                 'product_category',
                 queryset=ProductVariant.objects.prefetch_related(
@@ -126,7 +126,7 @@ class ProductManager(models.Manager):
         from product.models import OrderedItem
         from product.models import OtherCost
         other_price = OtherCost.objects.current_month_bill()
-        data = self.model.objects.prefetch_related(
+        data = self.prefetch_related(
             Prefetch("variant",
                      queryset=ProductVariant.objects.select_related('color', 'size', 'category').prefetch_related(
                          'orderedItem_variants',
@@ -144,7 +144,7 @@ class ProductManager(models.Manager):
         from product.models import ProductVariant
         from product.models import OtherCost
         other_price = OtherCost.objects.current_month_bill()
-        return self.model.objects.prefetch_related(
+        return self.prefetch_related(
             Prefetch("variant",
                      queryset=ProductVariant.objects.select_related('color', 'size', 'category')
                      .annotate(price=F('bag_purchase_price') + F('marketing_cost') + F('vat') + F('printing_cost')
@@ -158,7 +158,7 @@ class ProductManager(models.Manager):
         from product.models import ProductVariant
         from product.models import OtherCost
         other_price = OtherCost.objects.current_month_bill()
-        data = self.model.objects.filter(id=id).prefetch_related(
+        data = self.filter(id=id).prefetch_related(
             Prefetch(
                 'variant',
                 queryset=ProductVariant.objects.select_related('color', 'size', 'category').annotate(
@@ -232,7 +232,7 @@ class ProductManager(models.Manager):
                 'stock total, profit can\t be empty')
 
     def update_product(self, id, data):
-        old_product = self.model.objects.get(id=id)
+        old_product = self.get(id=id)
         old_product.product_name = data['product_name']
         old_product.product_description = data['product_description']
         try:
@@ -265,7 +265,7 @@ class ProductVariantManager(models.Manager):
         from product.models import SupplierTransaction
         from product.models import OtherCost
         other_price = OtherCost.objects.current_month_bill()
-        data = self.model.objects.filter(id=id).select_related('size', 'color', 'category', 'product') \
+        data = self.filter(id=id).select_related('size', 'color', 'category', 'product') \
             .prefetch_related(
             Prefetch('product_variant',
                      queryset=SupplierTransaction.objects.select_related('supplier').annotate(
@@ -281,12 +281,12 @@ class ProductVariantManager(models.Manager):
         return data
 
     def net_stock(self):
-        data = self.model.objects.aggregate(net_stock=Sum(F('stock_total')))
+        data = self.aggregate(net_stock=Sum(F('stock_total')))
         return data
 
     @transaction.atomic
     def update_variant(self, id, form_data):
-        old_variant = self.model.objects.get(id=id)
+        old_variant = self.get(id=id)
         for key, value in form_data.items():
             setattr(old_variant, key, value)
 
@@ -336,7 +336,7 @@ class ProductVariantManager(models.Manager):
 
 class SupplierManager(models.Manager):
     def get_all_supplier(self):
-        data = self.model.objects.all().prefetch_related('product_supplier') \
+        data = self.prefetch_related('product_supplier') \
             .annotate(
             total_supplied=Coalesce(Sum('product_supplier__total_supplied'), Value(0)),
             total_price=Sum(F('product_supplier__total_supplied') * F('product_supplier__per_product_purchase_price'),
@@ -347,7 +347,7 @@ class SupplierManager(models.Manager):
 
     def get_supplier_details(self, id):
         from product.models import SupplierTransaction
-        data = self.model.objects.filter(id=id).prefetch_related(
+        data = self.filter(id=id).prefetch_related(
             Prefetch('product_supplier',
                      queryset=SupplierTransaction.objects.select_related(
                          'product', 'product__size', 'product__color', 'product__category',
@@ -389,13 +389,13 @@ class SupplierManager(models.Manager):
 
 class SupplierTransactionManager(models.Manager):
     def get_all_supplier(self):
-        data = self.model.objects.all()
+        data = self.all()
         return data
 
 
 class CustomerManger(models.Manager):
     def get_all_customer(self):
-        data = self.model.objects.prefetch_related('order_customer', 'order_customer__ordered_items') \
+        data = self.prefetch_related('order_customer', 'order_customer__ordered_items') \
             .annotate(
             total_paid=Coalesce(Sum(F('order_customer__paid_total'), output_field=FloatField()), Value(0)),
             total_billed=Coalesce(Sum(
@@ -411,7 +411,7 @@ class CustomerManger(models.Manager):
     def get_customer_details(self, id):
         from product.models import Order
         from product.models import PaymentHistory
-        data = self.model.objects.filter(id=id).prefetch_related(
+        data = self.filter(id=id).prefetch_related(
             Prefetch(
                 'order_customer',
                 queryset=Order.objects.prefetch_related('ordered_items', Prefetch(
@@ -445,7 +445,7 @@ class CustomerManger(models.Manager):
 
     @transaction.atomic
     def update_customer_details(self, id, data):
-        customer_info = self.model.objects.get(id=id)
+        customer_info = self.get(id=id)
         customer_info.customer_name = data['customer_name']
         customer_info.customer_phone = data['customer_phone']
         customer_info.customer_address = data['customer_address']
@@ -468,7 +468,7 @@ class CustomerManger(models.Manager):
 
 class OrderManager(models.Manager):
     def net_order(self):
-        data = self.model.objects.prefetch_related('ordered_items').annotate(
+        data = self.prefetch_related('ordered_items').annotate(
             due=Case(
                 When(is_paid=False,
                      then=Sum((F('ordered_items__quantity')
@@ -496,7 +496,7 @@ class OrderManager(models.Manager):
         return data
 
     def get_all_order(self):
-        data = self.model.objects.all().prefetch_related('ordered_items').select_related('customer', 'sold_by') \
+        data = self.prefetch_related('ordered_items').select_related('customer', 'sold_by') \
             .annotate(total_item=Coalesce(Sum('ordered_items__quantity'), Value(0)),
                       total_billed=Sum(
                           (F('ordered_items__quantity') * F('ordered_items__price_per_product'))
@@ -511,14 +511,14 @@ class OrderManager(models.Manager):
                               ) - F('paid_total')),
                 default=Value(0),
                 output_field=FloatField()
-            )).order_by(
+            )).annotate(total_paid=F('total_billed') - F('total_due')).order_by(
             '-total_due')
         return data
 
     def get_order_detail(self, order_id):
         from product.models import OrderedItem
         from product.models import PaymentHistory
-        data = self.model.objects.filter(pk=order_id).prefetch_related(
+        data = self.filter(pk=order_id).prefetch_related(
             Prefetch('ordered_items',
                      queryset=OrderedItem.objects.annotate(
                          sub_total=ExpressionWrapper(F('quantity') * F('price_per_product') * (
@@ -631,7 +631,7 @@ class OrderManager(models.Manager):
         """This method is responsible for add new payment to payment history"""
         if not order_id or not amount or not received_by:
             raise ValueError("All field is required")
-        order = self.model.objects.filter(id=order_id).prefetch_related('ordered_items').annotate(
+        order = self.filter(id=order_id).prefetch_related('ordered_items').annotate(
             total_billed=Sum(
                 (F('ordered_items__quantity') * F('ordered_items__price_per_product'))
                 * (Value(1) - (F('ordered_items__discount_percent') / 100.00)),
@@ -659,7 +659,7 @@ class OrderManager(models.Manager):
             raise ValueError("Id is required")
         try:
             from product.models import OrderedItem
-            order = self.model.objects.filter(id=id).prefetch_related(
+            order = self.filter(id=id).prefetch_related(
                 Prefetch(
                     'ordered_items',
                     queryset=OrderedItem.objects.select_related('product'),
@@ -712,11 +712,11 @@ class OrderManager(models.Manager):
 
 class OrderedItemManager(models.Manager):
     def net_sold_item(self):
-        data = self.model.objects.aggregate(net_sold_item=Sum(F('quantity'), output_field=IntegerField()))
+        data = self.aggregate(net_sold_item=Sum(F('quantity'), output_field=IntegerField()))
         return data
 
     def calculate_net_profit_and_revenue(self):
-        data = self.model.objects.aggregate(
+        data = self.aggregate(
             net_profit=Sum(F('profit_per_product') * F('quantity') - (
                     F('price_per_product') * F('quantity') * F('discount_percent') / 100.0),
                            output_field=FloatField()),
@@ -727,7 +727,7 @@ class OrderedItemManager(models.Manager):
 
     def calculate_net_profit_and_revenue_current_month(self, present_month=localtime(now()).month,
                                                        present_year=localtime(now()).year):
-        data = self.model.objects.select_related('order').filter(order__ordered_date__month=present_month,
+        data = self.select_related('order').filter(order__ordered_date__month=present_month,
                                                                  order__ordered_date__year=present_year).values(
             'order__ordered_date__day').annotate(
             total_item=Coalesce(Sum('quantity'), Value(0)),
@@ -740,7 +740,7 @@ class OrderedItemManager(models.Manager):
         return data
 
     def calculate_profit_revenue_all_month(self):
-        data = self.model.objects.select_related('order').values('order__ordered_date__year',
+        data = self.select_related('order').values('order__ordered_date__year',
                                                                  'order__ordered_date__month').annotate(
             total_item=Coalesce(Sum('quantity'), Value(0)),
             net_profit=Sum(F('profit_per_product') * F('quantity') - (
@@ -756,7 +756,7 @@ class OtherCostManager(models.Manager):
     def current_month_bill(self):
         current_month = now().month
         current_year = now().year
-        data = self.model.objects.filter(date__month=current_month, date__year=current_year).aggregate(
+        data = self.filter(date__month=current_month, date__year=current_year).aggregate(
             others_bill=Coalesce(Sum(
                 F('shop_rent_per_product') + F('electricity_bill_per_product') + F('others_bill_per_product') + F(
                     'employee_cost_per_product'),
@@ -765,7 +765,7 @@ class OtherCostManager(models.Manager):
 
     def delete_utility_bill(self, id):
         try:
-            self.model.objects.get(id=id).delete()
+            self.get(id=id).delete()
         except DatabaseError as e:
             raise DatabaseError('Error occurred while deleting utility bill')
 
@@ -773,7 +773,7 @@ class OtherCostManager(models.Manager):
 
     def update_utility_bill(self, id, data):
         try:
-            old_data = self.model.objects.get(id=id)
+            old_data = self.get(id=id)
             old_data.shop_rent = data['shop_rent']
             old_data.shop_rent_per_product = data['shop_rent_per_product']
             old_data.electricity_bill = data['electricity_bill']

@@ -22,7 +22,9 @@ class UserAdmin(BaseUserAdmin, admin.ModelAdmin):
     list_display = ['code', 'name']
     fieldsets = (
         (None, {"fields": ['code', 'password']}),
-        (_('Personal Info'), {"fields": ['profile_pic', 'name', 'email', 'nid', 'gender', 'dob', 'city', 'country', 'address']}),
+        (_('Personal Info'), {
+            "fields": ['profile_pic', 'name', 'email', 'phone_no1', 'phone_no2', 'nid', 'gender', 'dob', 'city',
+                       'country', 'address']}),
         (_('Permission'),
          {"fields": ['is_active', 'is_staff', 'is_superuser', 'is_admin']}),
         (_('Important Dates'), {"fields": ['last_login']})
@@ -31,8 +33,9 @@ class UserAdmin(BaseUserAdmin, admin.ModelAdmin):
     add_fieldsets = (
         (None, {
             'classes': ['wide'],
-            'fields': ['name', 'email', 'nid', 'gender', 'dob', 'city', 'country', 'address']
-        }),
+            'fields': ['name', 'email', 'phone_no1', 'phone_no2', 'nid', 'gender', 'dob', 'city', 'country', 'address']
+        }), (_('Permission'),
+             {"fields": ['is_active', 'is_staff', 'is_superuser', 'is_admin']}),
     )
     readonly_fields = ['code']
 

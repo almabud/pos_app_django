@@ -127,7 +127,7 @@ class Customer(models.Model):
 class Order(models.Model):
     """This model store data about order"""
     customer = models.ForeignKey(Customer, related_name='order_customer', on_delete=models.CASCADE)
-    sold_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    sold_by = models.ForeignKey(User, related_name='order_sold_by', null=True, blank=True, on_delete=models.SET_NULL)
     ordered_date = models.DateTimeField(auto_now_add=True)
     is_paid = models.BooleanField(default=False)
     paid_total = models.FloatField(default=0)

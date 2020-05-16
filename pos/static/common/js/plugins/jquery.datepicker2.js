@@ -43,7 +43,7 @@
 			},
 			views: {
 				decade: {
-					show: null,
+					show: new Date(),
 					selected: [],
 					disabled: [],
 					forbidden: [],
@@ -51,7 +51,7 @@
 					marked: []
 				},
 				year: {
-					show: null,
+					show: new Date(),
 					selected: [],
 					disabled: [],
 					forbidden: [],
@@ -59,7 +59,7 @@
 					marked: []
 				},
 				month: {
-					show: null,
+					show: new Date(),
 					selected: [],
 					disabled: [],
 					forbidden: [],

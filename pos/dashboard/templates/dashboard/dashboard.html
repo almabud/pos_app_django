@@ -351,10 +351,6 @@
                 netSold.push(totalItem);
                 netOrder.push(totalOrder);
             {% endfor %}
-            console.log(netProfit);
-            console.log(netRevenue);
-            console.log(netSold);
-            console.log(netOrder);
             var dataFirst = {
                 data: netRevenue,
                 fill: false,
@@ -477,6 +473,17 @@
             initDatatable();
             initCurrentMonthChart();
             /*----------------------*/
+            {% if messages %}
+                {% for message in messages %}
+                    var tags = ``;
+                    {% if message.tags %}
+                        tags = `{{ message.tags }}`;
+                    {% endif %}
+                {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}Important: {% endif %}
+                    var message = `{{ message }}`;
+                    showToast(message, tags)
+                {% endfor %}
+            {% endif %}
 
         });
     </script>

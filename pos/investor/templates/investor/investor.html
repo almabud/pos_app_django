@@ -25,7 +25,7 @@
                     <div class="table-responsive product_list_table">
                         <table class="table table-hover" id="product_list">
                             <thead class=" text-primary">
-                            <th>Invest Date</th>
+                            <th>Joining Date</th>
                             <th>Name</th>
                             <th>Phone No</th>
                             <th>Address</th>
@@ -33,7 +33,7 @@
                             </thead>
                             <tbody id="investorListTbody">
                             {% for investor in investors %}
-                                <tr class="investor_row cursor-pointer" data-id='{{ investor.id }}'>
+                                <tr class="investor_row cursor-pointer" data-id='{{ investor.id }}' onclick="redirect_new_page('{% url 'investor:shareholder_details' investor.id %}')">
                                     <td>{{ investor.joining_date|date:'d/m/Y' }}</td>
                                     <td>{{ investor.name }}</td>
                                     <td>{{ investor.phone_no }}</td>
