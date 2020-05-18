@@ -58,7 +58,7 @@ class UserManager(BaseUserManager):
     def get_all_users(self):
         """Fetch all users"""
         from product.models import Order
-        users = self.model.objects.filter(is_active=True).prefetch_related('order_sold_by')
+        users = self.filter(is_active=True).prefetch_related('order_sold_by')
         return users
 
     def user_details(self, code):
@@ -110,6 +110,29 @@ class UserManager(BaseUserManager):
         except DatabaseError as e:
             raise DatabaseError("Technical problem to activate user")
         return True
+
+    @transaction.atomic
+    def update_user(self, instance):
+        try:
+            updated_user = instance.save()
+            updated_user.groups.clear()
+            if updated_user.is_superuser:
+                user_group = Group.objects.get(name='superuser')
+            elif updated_user.is_admin:
+                user_group = Group.objects.get(name='admin')
+            elif updated_user.is_staff:
+                user_group = Group.objects.get(name='staff')
+            updated_user.groups.add(user_group)
+        except DatabaseError as e:
+            raise DatabaseError("Error occurred while updating")
+        return updated_user
+
+    def deactivate_user_list(self):
+        try:
+            data = self.filter(is_active=False).prefetch_related('order_sold_by')
+        except DatabaseError as e:
+            raise DatabaseError('Technical problem')
+        return data
 
 
 class User(AbstractBaseUser, PermissionsMixin):

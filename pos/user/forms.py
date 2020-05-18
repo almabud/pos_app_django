@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth import authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from django.forms import TextInput, PasswordInput, ModelForm, NumberInput, ImageField, FileInput, DateInput, \
     RadioSelect, Select, CheckboxInput
@@ -30,6 +31,9 @@ class LoginForm(AuthenticationForm):
             if not user.is_active:
                 self.add_error('username', 'This user does not exist')
                 raise forms.ValidationError('This user does not exist')
+        if authenticate(username=self.cleaned_data['username'], password=self.cleaned_data['password']) is None:
+            self.add_error('username', 'Username or password is incorrect')
+            raise forms.ValidationError('Username or password is incorrect')
 
 
 class AddNewEmployeeForm(ModelForm):

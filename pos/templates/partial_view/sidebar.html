@@ -74,6 +74,14 @@
                 </a>
               </li>
           {% endif %}
+          {% if perms.user.view_user %}
+              <li class="{% active request 'user:deactivate_employees' 'active' %}">
+                <a href="{% url 'user:deactivate_employees' %}">
+                  <i class="nc-icon nc-badge"></i>
+                  <p>Deactivate employees</p>
+                </a>
+              </li>
+          {% endif %}
           {% if perms.user.add_user %}
               <li class="{% active request 'user:add_employee' 'active' %}">
                 <a href="{% url 'user:add_employee' %}">

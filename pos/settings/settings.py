@@ -137,7 +137,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 LOGIN_URL = 'user:login'
-DASHBOARD_URL = 'dashboard:dashboard'
+LOGIN_REDIRECT_URL = 'user:login'
+# DASHBOARD_URL = 'dashboard:dashboard'
 
 STATIC_URL = '/static/'
 

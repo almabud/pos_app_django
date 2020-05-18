@@ -14,7 +14,8 @@
                         <div class="author">
                             <a style="color:#51cbce !important;">
                                 <img onclick="$('#img_input').click()" class="avatar border-gray" id="img_preview"
-                                     src=" {% if user_details.profile_pic %}{{ user_details.profile_pic.url }} {% else %} {% static '/common/img/mike.jpg' %} {% endif %}" alt="...">
+                                     src="{% if user_details.profile_pic %}{{ user_details.profile_pic.url }} {% else %} {% static '/common/img/mike.jpg' %} {% endif %}"
+                                     alt="...">
                                 <input type="file" name="profile_pic" id="img_input" hidden="" accept="image/*"
                                        disabled>
                                 <h5 class="title" id="username">{{ user_details.name }}</h5>
@@ -58,31 +59,33 @@
                             </div>
                         </div>
                     </div>
-                    <div class="row" id="accountDltBtn">
-                        <div class="update ml-auto mr-auto">
-                            <button type="button"
-                                    class="btn btn-round {% if not user_details.is_active %}display-none{% endif %}"
-                                    id="deactivateBtn"
-                                    style="background: #dc3545;">
-                                <div class="spinner-grow display-none" role="status"
-                                     style="color:yellow;" id="deactivateSpinner">
-                                    <span class="sr-only">Loading...</span>
-                                </div>
-                                <span id="deactivateBtnTxt">Deactivate</span>
-                            </button>
+                    {% if user.code != user_details.code %}
+                        <div class="row" id="accountDltBtn">
+                            <div class="update ml-auto mr-auto">
+                                <button type="button"
+                                        class="btn btn-round {% if not user_details.is_active %}display-none{% endif %}"
+                                        id="deactivateBtn"
+                                        style="background: #dc3545;">
+                                    <div class="spinner-grow display-none" role="status"
+                                         style="color:yellow;" id="deactivateSpinner">
+                                        <span class="sr-only">Loading...</span>
+                                    </div>
+                                    <span id="deactivateBtnTxt">Deactivate</span>
+                                </button>
 
-                            <button type="button"
-                                    class="btn btn-round {% if user_details.is_active %}display-none{% endif %}"
-                                    id="activateBtn"
-                                    style="background: #28a745;">
-                                <div class="spinner-grow display-none" role="status"
-                                     style="color:yellow;" id="activateSpinner">
-                                    <span class="sr-only">Loading...</span>
-                                </div>
-                                <span id="activateBtnTxt">Activate</span>
-                            </button>
+                                <button type="button"
+                                        class="btn btn-round {% if user_details.is_active %}display-none{% endif %}"
+                                        id="activateBtn"
+                                        style="background: #28a745;">
+                                    <div class="spinner-grow display-none" role="status"
+                                         style="color:yellow;" id="activateSpinner">
+                                        <span class="sr-only">Loading...</span>
+                                    </div>
+                                    <span id="activateBtnTxt">Activate</span>
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    {% endif %}
                     <div class="display-none" id="position">
                         <div class="permission-title">
                             <h6>Position</h6>
@@ -124,14 +127,29 @@
                 <div class="card card-user">
                     <div class="card-header">
                         <div class="row">
-                            <div class="col-12 col-md-10 text-center text-md-left">
+                            <div class="col-12 col-md-6 text-center text-md-left">
                                 <h5 class="card-title">Employee Info</h5>
                             </div>
-                            <div class="col-12 col-md-2 text-center">
-                                <button type="button" class="btn btn-primary btn-round" id="editBtn">Edit</button>
-                                <button type="button" class="btn btn-primary btn-round display-none" id="cancelBtn">
-                                    Cancel
-                                </button>
+                            <div class="col-12 col-md-6 text-center">
+                                <div class="d-flex flex-row justify-content-md-end justify-content-center"
+                                     style="margin: 0 5px;">
+                                    {% if user.is_admin or user.is_superuser or user.code == user_details.code %}
+                                        <button type="button" class="btn btn-primary btn-round" data-toggle="modal"
+                                                data-target="#passChangeModal" id="changePassBtn">Change Password
+                                        </button>
+                                    {% endif %}
+                                    {% if user.is_admin or user.is_superuser %}
+                                        <div class="editBtnWrapper" style="margin: 0 5px;">
+                                            <button type="button" class="btn btn-primary btn-round" id="editBtn">Edit
+                                            </button>
+                                            <button type="button" class="btn btn-primary btn-round display-none"
+                                                    id="cancelBtn">
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
                             </div>
                         </div>
                     </div>
@@ -154,8 +172,21 @@
                                     <label for=email">
                                         Email <span class="error_text" id="email_error_text"></span>
                                     </label>
-                                    <input type="email" name="email" class="form-control input-text" placeholder="Email"
-                                           maxlength="255" id="id_email" value="{{ user_details.email }}" disabled>
+                                    <input type="email" name="email" class="form-control input-text"
+                                           maxlength="255" id="id_email" value="
+
+
+
+
+
+
+
+
+
+
+
+                                            {% if not user.details.email %}{% else %}{{ user_details.email }}{% endif %}"
+                                           disabled>
                                 </div>
                             </div>
                         </div>
@@ -220,9 +251,6 @@
                                 <div class="form-group">
                                     <label>City
                                         <span class="error_text" id="city_error_text"></span>
-                                        {% if form.city.errors %}
-                                            {{ form.city.errors|striptags|json_script:"city_error" }}
-                                        {% endif %}
                                     </label>
                                     <input type="text" name="city" class="form-control input-text" placeholder="City"
                                            required=""
@@ -336,291 +364,427 @@
     </form>
 {% endblock %}
 {% block outside_wrapper %}
+    {% if user.is_admin or user.is_superuser or user.code == user_details.code %}
+        <!--Password Modal-->
+        <form method="post" id="passChangeForm">
+            <div class="modal fade" id="passChangeModal" tabindex="-1" role="dialog"
+                 aria-labelledby="passChangeModalTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLongTitle">Change password</h5>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label>Your password
+                                    <span class="error_text" id="odlPassErrorTxt"></span>
+                                </label>
+                                <input type="password" name="old_password" class="form-control" required=""
+                                       maxlength="30"
+                                       id="passwordInput">
+                            </div>
+                            <div class="form-group">
+                                <label>New password
+                                    <span class="error_text" id="newPassErrorTxt"></span>
+                                </label>
+                                <input type="password" name="new_password" class="form-control" required=""
+                                       minlength="6"
+                                       maxlength="30"
+                                       id="newPasswordInput">
+                            </div>
+                            <div class="form-group">
+                                <label>Re type password
+                                    <span class="error_text" id="rePassErrorTxt"></span>
+                                </label>
+                                <input type="password" name="retype_password" class="form-control" required=""
+                                       minlength="6"
+                                       maxlength="30" id="rePasswordInput">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary btn-round" data-dismiss="modal">Close
+                            </button>
+                            <button type="submit" class="btn btn-primary btn-round" id="changePassSubmitBtn">
+                                <div class="spinner-grow display-none" role="status"
+                                     style="color:yellow;" id="passSpinner">
+                                    <span class="sr-only">Loading...</span>
+                                </div>
+                                <span id="passBtnTxt">Save</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--End Password Modal-->
+    {% endif %}
 {% endblock %}
 {% block add_new_js %}
     <script src="{% static  '/user/js/user.custom.js' %}"></script>
     <script>
-        function showSpinner() {
-            $('#spinner').removeClass('display-none');
-            $('#save_btn_txt').addClass('display-none');
-        }
-
-        function hideSpinner() {
-            $('#spinner').addClass('display-none');
-            $('#save_btn_txt').removeClass('display-none');
-        }
-
-        function initEmployeeInfo() {
-            window.name = '{{ user_details.name }}';
-            window.email = '{{ user_details.email }}';
-            window.phone_no1 = '{{ user_details.phone_no1 }}';
-            window.phone_no2 = '{{ user_details.phone_no2 }}';
-            window.address = '{{ user_details.address }}';
-            window.nid = '{{ user_details.nid }}';
-            window.country = '{{ user_details.country }}';
-            window.city = '{{ user_details.city }}';
-            window.dob = '{{ user_details.dob|date:'d/m/Y' }}';
-            window.gender = '{{ user_details.gender }}';
-            {% if user_details.profile_pic %}
-                window.profile_pic = '{{ user_details.profile_pic.url }}';
-            {% else %}
-                window.profile_pic = '';
-            {% endif %}
-            window.is_active = '{{ user_details.is_active }}';
-            window.is_superuser = '{{ user_details.is_superuser }}';
-            window.is_seller = '{{ user_details.is_seller }}';
-        }
-
-        function initFormValue() {
-            $('#employeeForm input').each(function () {
-                var inputName = $(this).attr('name');
-                if (inputName != 'profile_pic' && inputName != 'csrfmiddlewaretoken') {
-                    $(this).val(window[inputName]);
-                    $(this).removeClass('error_border');
-                    if (inputName == 'is_admin' && window[inputName] == 'True') {
-                        $(this).prop('checked', true);
-                    }
-                    if (inputName == 'is_superuser' && window[inputName] == 'True') {
-                        $(this).prop('checked', true);
-                    }
-                    if (inputName == 'is_seller' && window[inputName] == 'True') {
-                        $(this).prop('checked', true);
-                    }
-                }
-            });
-            $('#employeeForm select').val(window[$('form select').attr('name')]);
-            $('#employeeForm textarea').val(window[$('form textarea').attr('name')]);
-            if (window.profile_pic != '' && window.profile_pic) {
-                $('#img_preview').attr('src', window.profile_pic);
+        {% if user.is_admin or user.is_superuser %}
+            function showSpinner() {
+                $('#spinner').removeClass('display-none');
+                $('#save_btn_txt').addClass('display-none');
             }
-            $('#genderTxt').text(window[$('form select').attr('name')]);
 
-            $('#name_error_text').text('');
-            $('#email_error_text').text('');
-            $('#phone_no1_error_text').text('');
-            $('#phone_no2_error_text').text('');
-            $('#gender_error_text').text('');
-            $('#country_error_text').text('');
-            $('#city_error_text').text('');
-            $('#dob_error_text').text('');
-        }
+            function hideSpinner() {
+                $('#spinner').addClass('display-none');
+                $('#save_btn_txt').removeClass('display-none');
+            }
 
-        function CheckBoxToRadio(selectorOfCheckBox, isUncheckable) {
-            $(selectorOfCheckBox).each(function () {
-                $(this).change(function () {
-                    var isCheckedThis = $(this).prop('checked');
-                    $(selectorOfCheckBox).prop('checked', false);
+            function initEmployeeInfo() {
+                window.name = '{{ user_details.name }}';
+                window.email = '{{ user_details.email }}';
+                window.phone_no1 = '{{ user_details.phone_no1 }}';
+                window.phone_no2 = '{{ user_details.phone_no2 }}';
+                window.address = '{{ user_details.address }}';
+                window.nid = '{{ user_details.nid }}';
+                window.country = '{{ user_details.country }}';
+                window.city = '{{ user_details.city }}';
+                window.dob = '{{ user_details.dob|date:'d/m/Y' }}';
+                window.gender = '{{ user_details.gender }}';
+                {% if user_details.profile_pic %}
+                    window.profile_pic = '{{ user_details.profile_pic.url }}';
+                {% else %}
+                    window.profile_pic = '';
+                {% endif %}
+                window.is_active = '{{ user_details.is_active }}';
+                window.is_superuser = '{{ user_details.is_superuser }}';
+                window.is_seller = '{{ user_details.is_seller }}';
+                window.is_admin = '{{ user_details.is_admin }}';
+            }
 
-                    if (isCheckedThis === true || isUncheckable === true) {
-                        $(this).prop('checked', true);
-                        $(this).val(true);
+            function initFormValue() {
+                $('#employeeForm input').each(function () {
+                    var inputName = $(this).attr('name');
+                    if (inputName != 'profile_pic' && inputName != 'csrfmiddlewaretoken') {
+                        $(this).val(window[inputName]);
+                        $(this).removeClass('error_border');
+                        if (inputName == 'is_admin' && window[inputName] == 'True') {
+                            $(this).prop('checked', true);
+                        }
+                        if (inputName == 'is_superuser' && window[inputName] == 'True') {
+                            $(this).prop('checked', true);
+                        }
+                        if (inputName == 'is_seller' && window[inputName] == 'True') {
+                            $(this).prop('checked', true);
+                        }
                     }
                 });
-            });
-        }
-
-        function editEmployee() {
-            showSpinner();
-            var formData = new FormData(employeeForm);
-            if ('{{ user.code }}' == '{{ user_details.code }}') {
-                formData.append('is_super_user', '{{ user_details.is_superuser }}');
-                formData.append('is_admin', '{{ user_details.is_admin }}');
-                formData.append('is_seller', '{{ user_details.is_seller }}');
-            }
-            $.ajax({
-                url: window.location.href,
-                type: 'POST',
-                processData: false,
-                contentType: false,
-                data: formData,
-                success: function (data, textStatus, jqXHR) {
-                    hideSpinner();
-                    data = JSON.parse(data);
-                    window.name = data.name;
-                    window.email = data.email;
-                    window.phone_no1 = data.phone_no1;
-                    window.phone_no2 = data.phone_no2;
-                    window.address = data.address;
-                    window.nid = data.nid;
-                    window.country = data.country;
-                    window.city = data.city;
-                    window.dob = data.dob;
-                    window.gender = data.gender;
-                    window.profile_pic = data.profile_pic;
-                    window.is_active = data.is_active;
-                    window.is_superuser = data.is_superuser;
-                    window.is_seller = data.is_seller;
-                    showToast('Successfully updated', 'success');
-                    $('#cancelBtn').click();
-                },
-                error: function (data, textStatus, jqXHR) {
-                    hideSpinner();
-                    errors = data.responseJSON;
-                    if ('phone_no1' in errors) {
-                        var phoneNo1Error = errors.phone_no1[0];
-                        $('#phone_no1_error_text').text(phoneNo1Error);
-                        $('input[name="phone_no1"]').addClass('error_border');
-                    }
-                    if ('phone_no2' in errors) {
-                        var phoneNo2Error = errors.phone_no2[0];
-                        $('#phone_no2_error_text').text(phoneNo2Error);
-                        $('input[name="phone_no1"]').addClass('error_border');
-                    }
-                    if ('name' in errors) {
-                        var nameError = errors.name[0];
-                        $('#name_error_text').text(nameError);
-                        $('input[name="name"]').addClass('error_border');
-                    }
-                    if ('email' in errors) {
-                        var emailError = errors.email[0];
-                        $('#email_error_text').text(emailError);
-                        $('input[name="email"]').addClass('error_border');
-                    }
-                    if ('gender' in errors) {
-                        var genderError = errors.gender[0];
-                        $('#gender_error_text').text(genderError);
-                        $('select[name="gender"]').addClass('error_border');
-                    }
-                    if ('country' in errors) {
-                        var countryError = errors.country[0];
-                        $('#country_error_text').text(countryError);
-                        $('input[name="country"]').addClass('error_border');
-                    }
-                    if ('dob' in errors) {
-                        var dobError = errors.dob[0];
-                        $('#dob_error_text').text(dob);
-                        $('input[name="dob"]').addClass('error_border');
-                    }
-                    if ('city' in errors) {
-                        var cityError = errors.city[0];
-                        $('#city_error_text').text(cityError);
-                        $('input[name="city"]').addClass('error_border');
-                    }
-                    showToast('Error occurred while updating', 'error');
+                $('#employeeForm select').val(window[$('form select').attr('name')]);
+                $('#employeeForm textarea').val(window[$('form textarea').attr('name')]);
+                if (window.profile_pic != '' && window.profile_pic) {
+                    $('#img_preview').attr('src', window.profile_pic);
                 }
-            });
-        }
+                $('#genderTxt').text(window[$('form select').attr('name')]);
+
+                $('#name_error_text').text('');
+                $('#email_error_text').text('');
+                $('#phone_no1_error_text').text('');
+                $('#phone_no2_error_text').text('');
+                $('#gender_error_text').text('');
+                $('#country_error_text').text('');
+                $('#city_error_text').text('');
+                $('#dob_error_text').text('');
+            }
+
+            function CheckBoxToRadio(selectorOfCheckBox, isUncheckable) {
+                $(selectorOfCheckBox).each(function () {
+                    $(this).change(function () {
+                        var isCheckedThis = $(this).prop('checked');
+                        $(selectorOfCheckBox).prop('checked', false);
+
+                        if (isCheckedThis === true || isUncheckable === true) {
+                            $(this).prop('checked', true);
+                            $(this).val(true);
+                        }
+                    });
+                });
+            }
+
+            function editEmployee() {
+                if ($('#submitBtn').prop('attempted') != true) {
+                    $('#submitBtn').prop('attempted', true);
+                    showSpinner();
+                    var formData = new FormData(employeeForm);
+                    if ('{{ user.code }}' == '{{ user_details.code }}') {
+                        formData.append('is_super_user', '{{ user_details.is_superuser }}');
+                        formData.append('is_admin', '{{ user_details.is_admin }}');
+                        formData.append('is_seller', '{{ user_details.is_seller }}');
+                    }
+                    $.ajax({
+                        url: window.location.href,
+                        type: 'POST',
+                        processData: false,
+                        contentType: false,
+                        data: formData,
+                        success: function (data, textStatus, jqXHR) {
+                            $('#submitBtn').prop('attempted', false);
+                            hideSpinner();
+                            data = JSON.parse(data);
+                            window.name = data.name;
+                            window.email = data.email;
+                            window.phone_no1 = data.phone_no1;
+                            window.phone_no2 = data.phone_no2;
+                            window.address = data.address;
+                            window.nid = data.nid;
+                            window.country = data.country;
+                            window.city = data.city;
+                            window.dob = data.dob;
+                            window.gender = data.gender;
+                            window.profile_pic = data.profile_pic;
+                            window.is_active = data.is_active;
+                            window.is_superuser = data.is_superuser;
+                            window.is_seller = data.is_seller;
+                            window.is_admin = data.is_admin;
+                            if(data.is_admin){
+                                $('#positionTxt').text('Admin');
+                            }
+                            else if(data.is_superuser){
+                                 $('#positionTxt').text('Superuser');
+                            }
+                            else{
+                                $('#positionTxt').text('Seller');
+                            }
+                            showToast('Successfully updated', 'success');
+                            $('#cancelBtn').click();
+                        },
+                        error: function (data, textStatus, jqXHR) {
+                            $('#submitBtn').prop('attempted', false);
+                            hideSpinner();
+                            errors = data.responseJSON;
+                            if ('phone_no1' in errors) {
+                                var phoneNo1Error = errors.phone_no1[0];
+                                $('#phone_no1_error_text').text(phoneNo1Error);
+                                $('input[name="phone_no1"]').addClass('error_border');
+                            }
+                            if ('phone_no2' in errors) {
+                                var phoneNo2Error = errors.phone_no2[0];
+                                $('#phone_no2_error_text').text(phoneNo2Error);
+                                $('input[name="phone_no1"]').addClass('error_border');
+                            }
+                            if ('name' in errors) {
+                                var nameError = errors.name[0];
+                                $('#name_error_text').text(nameError);
+                                $('input[name="name"]').addClass('error_border');
+                            }
+                            if ('email' in errors) {
+                                var emailError = errors.email[0];
+                                $('#email_error_text').text(emailError);
+                                $('input[name="email"]').addClass('error_border');
+                            }
+                            if ('gender' in errors) {
+                                var genderError = errors.gender[0];
+                                $('#gender_error_text').text(genderError);
+                                $('select[name="gender"]').addClass('error_border');
+                            }
+                            if ('country' in errors) {
+                                var countryError = errors.country[0];
+                                $('#country_error_text').text(countryError);
+                                $('input[name="country"]').addClass('error_border');
+                            }
+                            if ('dob' in errors) {
+                                var dobError = errors.dob[0];
+                                $('#dob_error_text').text(dob);
+                                $('input[name="dob"]').addClass('error_border');
+                            }
+                            if ('city' in errors) {
+                                var cityError = errors.city[0];
+                                $('#city_error_text').text(cityError);
+                                $('input[name="city"]').addClass('error_border');
+                            }
+                            showToast('Error occurred while updating', 'error');
+                        }
+                    });
+                }
+
+            }
+        {% endif %}
 
         $(document).ready(function () {
             preventAutoFormSubmission();
             initDatatable();
-            initEmployeeInfo();
-            CheckBoxToRadio(".checkbox-wrapper .radio");
-            /*----------------------*/
-            $('#editBtn').on('click', function (e) {
-                initFormValue();
-                $('#employeeForm input').each(function () {
-                    var inputName = $(this).attr('name');
-                    if (inputName != 'profile_pic' && inputName != 'csrfmiddlewaretoken') {
-                        $(this).prop('disabled', false);
-                        $(this).removeClass('input-text');
-                    } else {
-                        $(this).prop('disabled', false);
-                    }
-                });
-                $('#employeeForm select').removeClass('display-none error_text');
-                $('#employeeForm select').prop('disabled', false);
-                $('#employeeForm textarea').removeClass('input-text');
-                $('#employeeForm textarea').prop('disabled', false);
-                $('#genderTxt').addClass('display-none');
-                if ('{{ user.code }}' != '{{ user_details.code }}') {
-                    $('#position').removeClass('display-none');
-                }
-                $('#submitBtnRow').removeClass('display-none');
-                $('#editBtn').addClass('display-none');
-                $('#cancelBtn').removeClass('display-none');
-                $('#emailColumn').addClass('col-md-6 pl-md-1');
-                $('#nameColumn').removeClass('display-none');
-                $('#accountDltBtn').addClass('display-none');
-            });
-            $('#cancelBtn').on('click', function (e) {
-                initFormValue();
-                $('#employeeForm input').each(function () {
-                    var inputName = $(this).attr('name');
-                    if (inputName != 'profile_pic' && inputName != 'csrfmiddlewaretoken') {
-                        $(this).prop('disabled', true);
-                        $(this).addClass('input-text');
-                    } else {
-                        $(this).prop('disabled', true);
-                    }
-                });
-                $('#emailColumn').removeClass('col-md-6 pl-md-1');
-                $('#nameColumn').addClass('display-none');
-                $('#employeeForm textarea').addClass('input-text');
-                $('#employeeForm textarea').prop('disabled', true);
-                $('#employeeForm select').addClass('display-none');
-                $('#genderTxt').removeClass('display-none');
-                $('#position').addClass('display-none');
-                $('#submitBtnRow').addClass('display-none');
-                $('#editBtn').removeClass('display-none');
-                $('#cancelBtn').addClass('display-none');
-                $('#accountDltBtn').removeClass('display-none');
-
-            });
-            $('#employeeForm').on('submit', function (e) {
-                e.preventDefault();
-                if ('{{ user.code }}' == '{{ user_details.code }}') {
-                    editEmployee();
-                } else {
-                    $('.radio').each(function () {
-                        var isCheckedThis = $(this).prop('checked');
-                        if (isCheckedThis == true) {
-                            editEmployee();
-                            return false;
+            {% if user.is_superuser or urser.is_admin %}
+                initEmployeeInfo();
+                CheckBoxToRadio(".checkbox-wrapper .radio");
+                /*----------------------*/
+                $('#editBtn').on('click', function (e) {
+                    initFormValue();
+                    $('#employeeForm input').each(function () {
+                        var inputName = $(this).attr('name');
+                        if (inputName != 'profile_pic' && inputName != 'csrfmiddlewaretoken') {
+                            $(this).prop('disabled', false);
+                            $(this).removeClass('input-text');
+                        } else {
+                            $(this).prop('disabled', false);
                         }
                     });
-                }
-            });
+                    $('#employeeForm select').removeClass('display-none error_text');
+                    $('#employeeForm select').prop('disabled', false);
+                    $('#employeeForm textarea').removeClass('input-text');
+                    $('#employeeForm textarea').prop('disabled', false);
+                    $('#genderTxt').addClass('display-none');
+                    if ('{{ user.code }}' != '{{ user_details.code }}') {
+                        $('#position').removeClass('display-none');
+                    }
+                    $('#submitBtnRow').removeClass('display-none');
+                    $('#editBtn').addClass('display-none');
+                    $('#cancelBtn').removeClass('display-none');
+                    $('#emailColumn').addClass('col-md-6 pl-md-1');
+                    $('#nameColumn').removeClass('display-none');
+                    $('#accountDltBtn').addClass('display-none');
+                });
+                $('#cancelBtn').on('click', function (e) {
+                    initFormValue();
+                    $('#employeeForm input').each(function () {
+                        var inputName = $(this).attr('name');
+                        if (inputName != 'profile_pic' && inputName != 'csrfmiddlewaretoken') {
+                            $(this).prop('disabled', true);
+                            $(this).addClass('input-text');
+                        } else {
+                            $(this).prop('disabled', true);
+                        }
+                    });
+                    $('#emailColumn').removeClass('col-md-6 pl-md-1');
+                    $('#nameColumn').addClass('display-none');
+                    $('#employeeForm textarea').addClass('input-text');
+                    $('#employeeForm textarea').prop('disabled', true);
+                    $('#employeeForm select').addClass('display-none');
+                    $('#genderTxt').removeClass('display-none');
+                    $('#position').addClass('display-none');
+                    $('#submitBtnRow').addClass('display-none');
+                    $('#editBtn').removeClass('display-none');
+                    $('#cancelBtn').addClass('display-none');
+                    $('#accountDltBtn').removeClass('display-none');
 
-            $('#deactivateBtn').on('click', function (e) {
-                $('#deactivateSpinner').removeClass('display-none');
-                $('#deactivateBtnTxt').addClass('display-none');
-                $.ajax({
-                    url: window.location.href,
-                    type: 'POST',
-                    data: {
-                        csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
-                        dlt_code: '{{ user_details.code }}'
-                    },
-                    success: function (data, textStatus, jqXHR) {
-                        $('#deactivateSpinner').addClass('display-none');
-                        $('#deactivateBtnTxt').removeClass('display-none');
-                        showToast('Deactivated', 'success');
-                        $('#deactivateBtn').addClass('display-none');
-                        $('#activateBtn').removeClass('display-none');
-                    },
-                    error: function (data, textStatus, jqXHR) {
-                        $('#deactivateSpinner').addClass('display-none');
-                        $('#deactivateBtnTxt').removeClass('display-none');
-                        showToast('Deactivation error', 'error');
+                });
+                $('#employeeForm').on('submit', function (e) {
+                    e.preventDefault();
+                    if ('{{ user.code }}' == '{{ user_details.code }}') {
+                        editEmployee();
+                    } else {
+                        $('.radio').each(function () {
+                            var isCheckedThis = $(this).prop('checked');
+                            if (isCheckedThis == true) {
+                                editEmployee();
+                                return false;
+                            }
+                        });
                     }
                 });
-            });
 
-            $('#activateBtn').on('click', function (e) {
-                $('#activateSpinner').removeClass('display-none');
-                $('#activateBtnTxt').addClass('display-none');
-                $.ajax({
-                    url: window.location.href,
-                    type: 'POST',
-                    data: {
-                        csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
-                        act_code: '{{ user_details.code }}'
-                    },
-                    success: function (data, textStatus, jqXHR) {
-                        $('#activateSpinner').addClass('display-none');
-                        $('#activateBtnTxt').removeClass('display-none');
-                        showToast('Activate', 'success');
-                        $('#deactivateBtn').removeClass('display-none');
-                        $('#activateBtn').addClass('display-none');
-                    },
-                    error: function (data, textStatus, jqXHR) {
-                        $('#activateSpinner').addClass('display-none');
-                        $('#activateBtnTxt').removeClass('display-none');
-                        showToast('Activation error', 'error');
+                $('#deactivateBtn').on('click', function (e) {
+                    if ($('#deactivateBtn').prop('attempted') != true) {
+                        $('#deactivateSpinner').removeClass('display-none');
+                        $('#deactivateBtnTxt').addClass('display-none');
+                        $('#deactivateBtn').prop('attempted', true);
+                        $.ajax({
+                            url: window.location.href,
+                            type: 'POST',
+                            data: {
+                                csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+                                dlt_code: '{{ user_details.code }}'
+                            },
+                            success: function (data, textStatus, jqXHR) {
+                                $('#deactivateSpinner').addClass('display-none');
+                                $('#deactivateBtnTxt').removeClass('display-none');
+                                $('#deactivateBtn').prop('attempted', false);
+                                showToast('Deactivated', 'success');
+                                $('#deactivateBtn').addClass('display-none');
+                                $('#activateBtn').removeClass('display-none');
+                            },
+                            error: function (data, textStatus, jqXHR) {
+                                $('#deactivateSpinner').addClass('display-none');
+                                $('#deactivateBtnTxt').removeClass('display-none');
+                                $('#deactivateBtn').prop('attempted', false);
+                                showToast('Deactivation error', 'error');
+                            }
+                        });
                     }
                 });
-            });
+
+                $('#activateBtn').on('click', function (e) {
+                    if ($('#activateBtn').prop('attempted') != true) {
+                        $('#activateBtn').prop('attempted', true);
+                        $('#activateSpinner').removeClass('display-none');
+                        $('#activateBtnTxt').addClass('display-none');
+                        $.ajax({
+                            url: window.location.href,
+                            type: 'POST',
+                            data: {
+                                csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+                                act_code: '{{ user_details.code }}'
+                            },
+                            success: function (data, textStatus, jqXHR) {
+                                $('#activateSpinner').addClass('display-none');
+                                $('#activateBtnTxt').removeClass('display-none');
+                                showToast('Activate', 'success');
+                                $('#deactivateBtn').removeClass('display-none');
+                                $('#activateBtn').addClass('display-none');
+                                $('#activateBtn').prop('attempted', false);
+                            },
+                            error: function (data, textStatus, jqXHR) {
+                                $('#activateSpinner').addClass('display-none');
+                                $('#activateBtnTxt').removeClass('display-none');
+                                showToast('Activation error', 'error');
+                                $('#activateBtn').prop('attempted', false);
+                            }
+                        });
+                    }
+
+                });
+            {% endif %}
+            {% if user.is_superuser or user.is_admin or user.code == user_details.code %}
+                $('#changePassBtn').on('click', function () {
+                    $('#rePassErrorTxt').text('');
+                    $('#newPasswordInput').removeClass('error-border');
+                    $('#rePasswordInput').removeClass('error-border');
+                    $('#passChangeForm')[0].reset();
+                });
+
+                $('#passChangeForm').on('submit', function (e) {
+                    e.preventDefault();
+                    if ($('#newPasswordInput').val() == $('#rePasswordInput').val()) {
+                        $('#rePassErrorTxt').text('');
+                        $('#newPasswordInput').removeClass('error-border');
+                        $('#rePasswordInput').removeClass('error-border');
+                        if ($("#changePassSubmitBtn").attr('attempted') != true) {
+                            $("#changePassSubmitBtn").attr("attempted", 'true');
+                            $('#passSpinner').removeClass('display-none');
+                            $('#passBtnTxt').addClass('display-none');
+                            $.ajax({
+                                url: window.location.href,
+                                type: 'POST',
+                                data: {
+                                    csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+                                    pass_user_code: '{{ user_details.code }}',
+                                    old_password: $('#passwordInput').val(),
+                                    new_password: $('#newPasswordInput').val()
+                                },
+                                success: function (data, textStatus, jqXHR) {
+                                    $('#passSpinner').addClass('display-none');
+                                    $('#passBtnTxt').removeClass('display-none');
+                                    $('#changePassSubmitBtn').prop('attempted', false);
+                                    showToast('password successfully changed', 'success');
+                                    $('#passChangeModal').modal('toggle');
+                                },
+                                error: function (data, textStatus, jqXHR) {
+                                    $('#passSpinner').addClass('display-none');
+                                    $('#passBtnTxt').removeClass('display-none');
+                                    $('#changePassSubmitBtn').prop('attempted', false);
+                                    var errors = data.responseJSON;
+                                    showToast(errors, 'error');
+                                }
+                            });
+                        }
+                    } else {
+                        $('#rePassErrorTxt').text('Password does\'nt match');
+                        $('#newPasswordInput').addClass('error-border');
+                        $('#rePasswordInput').addClass('error-border');
+                    }
+                });
+            {% endif %}
         });
     </script>
 {% endblock %}

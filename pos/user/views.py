@@ -4,32 +4,29 @@ from datetime import datetime
 from json import JSONEncoder
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, PermissionRequiredMixin
-from django.core import serializers
 from django.core.exceptions import PermissionDenied
-from django.core.serializers.json import DjangoJSONEncoder
 from django.db import DatabaseError
 from django.http import HttpResponse, HttpResponseRedirect, Http404, JsonResponse
-from django.shortcuts import render, redirect
-from django.contrib.auth.forms import UserChangeForm
-from django.contrib.auth.forms import AuthenticationForm
-from django.urls import reverse, reverse_lazy
-from django.utils.dateparse import parse_date
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.views.generic import TemplateView, FormView, RedirectView
 from django.contrib.auth import authenticate, login, logout, get_user_model
 
 from core.models import User
 from user.forms import LoginForm
 
-from scripts.mixin import LoggedOutRequiredMixin
-
 from user.forms import AddNewEmployeeForm
 
 
-class LoginView(LoggedOutRequiredMixin, FormView):
+class GetLoginView(FormView):
     template_name = "user/login.html"
     form_class = LoginForm
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return redirect('dashboard:dashboard')
+        return super(GetLoginView, self).dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
         username = form.cleaned_data['username']
@@ -115,8 +112,14 @@ class UserDetails(LoginRequiredMixin, TemplateView):
             raise Http404('Employee not found')
 
     def dispatch(self, request, *args, **kwargs):
-        user = request.user
-        self.check_perm(user=user, code=kwargs['code'], request=request)
+        user = User.objects.filter(code=kwargs['code'])
+        if request.user.is_anonymous:
+            return redirect('user:login')
+        if user is None:
+            raise Http404('Employee not found')
+        if request.user.code != kwargs['code'] and not request.user.is_admin and not request.user.is_superuser:
+            messages.error(request, 'You have no permission')
+            return HttpResponseRedirect(reverse('dashboard:dashboard'))
         return super(UserDetails, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -126,7 +129,6 @@ class UserDetails(LoginRequiredMixin, TemplateView):
 
     def post(self, request, code):
         user = request.user
-        self.check_perm(user=user, code=code, request=request)
         if request.is_ajax():
             self.check_perm(user=user, code=code, request=request)
             if 'dlt_code' in request.POST:
@@ -137,15 +139,51 @@ class UserDetails(LoginRequiredMixin, TemplateView):
                 if User.objects.activate_user(request.POST['act_code']):
                     return JsonResponse("success", status=201, safe=False)
                 return JsonResponse("error", status=400, safe=False)
+            elif 'pass_user_code' in request.POST:
+                data = request.POST
+                user_password = data['old_password']
+                new_password = data['new_password']
+                if user.check_password(user_password):
+                    user = User.objects.filter(code=data['pass_user_code']).first()
+                    if user is None:
+                        return JsonResponse("Employee not found", status=400, safe=False)
+                    user.set_password(new_password)
+                    try:
+                        user.save()
+                    except DatabaseError as e:
+                        return JsonResponse("Error occurred while changing password", status=400, safe=False)
+                    return JsonResponse("success", status=201, safe=False)
+                else:
+                    return JsonResponse("Wrong password", status=400, safe=False)
 
             user = User.objects.get(code=code)
             form = AddNewEmployeeForm(request.POST, request.FILES, instance=user)
             if form.is_valid():
-                try:
-                    updated_user = form.save()
-                except DatabaseError as e:
-                    return JsonResponse({'db_error': 'Error occurred while updating'}, status=400)
-
-                return JsonResponse(json.dumps(updated_user, cls=UpdateUserSerializer), status=200, safe=False)
+                if User.objects.update_user(form):
+                    return JsonResponse(json.dumps(user, cls=UpdateUserSerializer), status=200, safe=False)
+                return JsonResponse({'db_error': 'Error occurred while updating'}, status=400)
             else:
                 return JsonResponse(form.errors, status=400)
+
+
+class DeactivateEmployeeView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ('user.view_user',)
+    template_name = 'user/deactivate_userlist.html'
+
+    def get_context_data(self, **kwargs):
+        kwargs['deactivate_employees'] = User.objects.deactivate_user_list()
+        return super().get_context_data(**kwargs)
+
+    def post(self, request):
+        if request.is_ajax():
+            if request.user.has_perm('delete_user'):
+                dlt_user = User.objects.filter(code=request.POST['dlt_user_code']).first()
+                if dlt_user is None:
+                    return JsonResponse({'permission_denied': "Forbidden 403"}, status=400, safe=False)
+                try:
+                    dlt_user.delete()
+                    return JsonResponse({'success': "Forbidden 403"}, status=201, safe=False)
+                except DatabaseError as e:
+                    return JsonResponse({'db_error': "Error occurred while deleting"}, status=400, safe=False)
+            else:
+                return JsonResponse({'permission_denied': "Forbidden 403"}, status=400, safe=False)

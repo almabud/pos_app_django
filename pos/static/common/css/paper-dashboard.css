@@ -1950,7 +1950,8 @@ fieldset[disabled] .btn-link.active {
 .form-group .input-group-append .input-group-text,
 .input-group .input-group-prepend .input-group-text,
 .input-group .input-group-append .input-group-text {
-  padding: 10px 0 10px 10px;
+  /*edited by me */
+  padding: 7px 0 10px 10px;
 }
 
 .form-group .input-group-prepend .input-group-text+.form-control,
