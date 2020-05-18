@@ -3,7 +3,7 @@ from django.db import models, Error, IntegrityError, transaction, DatabaseError
 from django.db.models import Prefetch, Count, Sum, FloatField, F, Value
 from django.db.models.functions import Coalesce
 from django.http import Http404
-from django.utils.timezone import now
+from django.utils.timezone import now, localtime
 
 from scripts import employee_code_generator as code_generator
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, \
@@ -132,6 +132,42 @@ class UserManager(BaseUserManager):
             data = self.filter(is_active=False).prefetch_related('order_sold_by')
         except DatabaseError as e:
             raise DatabaseError('Technical problem')
+        return data
+
+    def calculate_seller_performance_curmonth(self, code):
+        from product.models import Order
+        from product.models import OrderedItem
+        data = Order.objects.get_all_order().filter(sold_by__code=code)
+        performance = data.filter(ordered_date__month=now().month, ordered_date__year=now().year).values(
+            'ordered_date__day', 'total_item').annotate(
+            total_order=Count('id')
+        ).order_by('ordered_date__day')
+        order_data = data.aggregate(
+            total_order_billed=Coalesce(Sum(F('total_billed')), Value(0)),
+            total_order_item=Coalesce(Sum(F('total_item')), Value(0)),
+            total_due_from_order=Coalesce(Sum(F('total_due')), Value(0))
+        )
+        performance = list(performance)
+        from product.models import ProductVariant
+        performance_temp = []
+        flag = 0
+        for i in range(1, int(localtime(now()).day) + 1):
+            if flag < len(performance) and performance[flag][
+                'ordered_date__day'] is i:
+                performance_temp.append(performance[flag])
+                flag += 1
+            else:
+                performance_temp.append(
+                    {'ordered_date_day': i, 'total_item': 0, 'total_order': 0})
+        data = {
+            'performance': performance_temp,
+            'total_order_billed': order_data['total_order_billed'],
+            'total_order_item': order_data['total_order_item'],
+            'total_collected_cash': order_data['total_order_billed'] - order_data['total_due_from_order'],
+            'total_due_from_order': order_data['total_due_from_order'],
+            'total_taken_order': data.aggregate(Count('id'))['id__count'],
+            'net_stock': ProductVariant.objects.net_stock()['net_stock']
+        }
         return data
 
 
