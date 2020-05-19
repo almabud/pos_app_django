@@ -256,9 +256,14 @@ class VariantDetails(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
                     return JsonResponse(form.errors, status=400)
 
 
-class AddNewProduct(FormView):
+class AddNewProduct(LoginRequiredMixin, PermissionRequiredMixin, FormView):
+    permission_required = ('product.add_product', 'product.add_productvariant')
     template_name = 'product/create_product.html'
     form_class = AddNewProductForm
+
+    def handle_no_permission(self):
+        messages.error(self.request, 'You have no permission')
+        return HttpResponseRedirect(reverse('dashboard:dashboard'))
 
     def form_valid(self, form):
         clean_form = form.cleaned_data
