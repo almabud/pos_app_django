@@ -83,3 +83,14 @@
 .form-control{
     padding: 6px 10px 10px 10px !important;
 }
+
+.navbar .navbar-toggler {
+    height: auto !important;
+}
+
+.navbar-light .navbar-toggler {
+    border-color: transparent !important;
+}
+.navbar-toggler-icon {
+    margin-left: -8px !important;
+}

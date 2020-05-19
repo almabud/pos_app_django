@@ -174,45 +174,53 @@ class VariantList(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
                 return JsonResponse('error', status=400, safe=False)
 
 
-class VariantDetails(TemplateView):
+class VariantDetails(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ('product.view_product', 'product.view_productvariant')
     template_name = 'product/variant_details.html'
+
+    def handle_no_permission(self):
+        messages.error(self.request, 'You have no permission')
+        return HttpResponseRedirect(reverse('dashboard:dashboard'))
 
     def get_context_data(self, **kwargs):
         variant_id = kwargs['variant_id']
         variant_details = ProductVariant.objects.get_product_variant_details(variant_id)
-        product_edit_form = ProductForm(initial={
-            'product_name': variant_details.product.product_name,
-            'product_description': variant_details.product.product_description
-        })
-        variant_edit_form = VariantForm(initial={
-            'product': variant_details.product,
-            'new_product_name': variant_details.product.product_name,
-            'product_description': variant_details.product.product_description,
-            'gsm': variant_details.gsm,
-            'color': variant_details.color,
-            'size': variant_details.size,
-            'category': variant_details.category,
-            'bag_purchase_price': variant_details.bag_purchase_price,
-            'marketing_cost': variant_details.marketing_cost,
-            'transport_cost': variant_details.transport_cost,
-            'printing_cost': variant_details.printing_cost,
-            'vat': variant_details.vat,
-            'profit': variant_details.profit,
-            'discount_percent': variant_details.discount_percent,
-            'discount_min_purchase': variant_details.discount_min_purchase,
-            'stock_total': variant_details.stock_total
-        })
+        if self.request.user.has_perm('product.change_product') and self.request.user.has_perm(
+                'product.change_productvariant'):
+            product_edit_form = ProductForm(initial={
+                'product_name': variant_details.product.product_name,
+                'product_description': variant_details.product.product_description
+            })
+            variant_edit_form = VariantForm(initial={
+                'product': variant_details.product,
+                'new_product_name': variant_details.product.product_name,
+                'product_description': variant_details.product.product_description,
+                'gsm': variant_details.gsm,
+                'color': variant_details.color,
+                'size': variant_details.size,
+                'category': variant_details.category,
+                'bag_purchase_price': variant_details.bag_purchase_price,
+                'marketing_cost': variant_details.marketing_cost,
+                'transport_cost': variant_details.transport_cost,
+                'printing_cost': variant_details.printing_cost,
+                'vat': variant_details.vat,
+                'profit': variant_details.profit,
+                'discount_percent': variant_details.discount_percent,
+                'discount_min_purchase': variant_details.discount_min_purchase,
+                'stock_total': variant_details.stock_total
+            })
+            kwargs['product_form'] = product_edit_form
+            kwargs['variant_form'] = variant_edit_form
+            kwargs['new_stock_form'] = NewStockForm()
         kwargs['variant_details'] = variant_details
-        kwargs['product_form'] = product_edit_form
-        kwargs['variant_form'] = variant_edit_form
-        kwargs['new_stock_form'] = NewStockForm()
         return super().get_context_data(**kwargs)
 
     def post(self, request, variant_id):
         if request.is_ajax():
             data = request.POST
-            # print(data['id'])
             if 'is_product_edited' in data and data['is_product_edited']:
+                if not self.request.user.has_perm('product.change_product'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 form = ProductForm(data)
                 if form.is_valid():
                     cleaned_data = form.cleaned_data
@@ -221,6 +229,8 @@ class VariantDetails(TemplateView):
                 else:
                     return JsonResponse(form.errors, status=400)
             elif 'is_variant_edited' in data and data['is_variant_edited']:
+                if not self.request.user.has_perm('product.change_productvariant'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 form = VariantForm(data)
                 if form.is_valid():
                     cleaned_data = form.cleaned_data
@@ -229,6 +239,9 @@ class VariantDetails(TemplateView):
                 else:
                     return JsonResponse(form.errors, status=400)
             else:
+                if not self.request.user.has_perm('product.change_product') and self.request.user.has_perm(
+                        'product.change_productvariant'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 form = NewStockForm(data)
                 if form.is_valid():
                     cleaned_data = form.cleaned_data
