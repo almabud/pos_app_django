@@ -88,13 +88,14 @@
                             <div class="row">
                                 <div class="col-6">
                                     <button id="posPrintBtn" type="button"
-                                            class="btn btn-primary btn-block mr-2 float-md-right"
+                                            class="btn btn-round btn-primary btn-block mr-2 float-md-right"
                                             onclick="printPosInvoice(`{{ pos_invoice }}`)">
                                         Print pos
                                     </button>
                                 </div>
                                 <div class="col-6">
-                                    <button type="button" class="btn btn-primary btn-block mr-2 float-md-right">
+                                    <button type="button"
+                                            class="btn btn-round btn-primary btn-block mr-2 float-md-right">
                                         Print invoice
                                     </button>
                                 </div>
@@ -179,9 +180,9 @@
                         <div class="col-md-11 col-12 text-center text-md-left">
                             <h5 class="card-title">Payment History</h5>
                         </div>
-                        {% if not order_details.is_paid %}
+                        {% if not order_details.is_paid and perms.product.add_paymenthistory %}
                             <div class="col-md-1 col-12">
-                                <button type="button" class="btn btn-primary btn-block mr-2 float-md-right"
+                                <button type="button" class="btn btn-round btn-primary btn-block mr-2 float-md-right"
                                         data-toggle="modal" data-target="#payment_modal">
                                     pay
                                 </button>
@@ -223,51 +224,56 @@
 {% endblock %}
 
 {% block outside_wrapper %}
-    <!-- The Modal -->
-    <div class="modal fade" id="payment_modal" tabindex="-1" role="dialog"
-         aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Make Payment</h5>
-                </div>
-                <form method="post">
-                    {% csrf_token %}
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label>Amount</label>
-                                    <input onChange="amountChange()" onkeyup="amountChange()" type="number" min="1.00"
-                                           name="amount"
-                                           max="{{ order_details.total_due|floatformat:2 }}"
-                                           step=".01"
-                                           required class="form-control"
-                                           placeholder="Enter amount"/>
+    {% if perms.product.add_paymenthistory %}
+        <!-- The Modal -->
+        <div class="modal fade" id="payment_modal" tabindex="-1" role="dialog"
+             aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Make Payment</h5>
+                    </div>
+                    <form method="post" id="paymentForm">
+                        {% csrf_token %}
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label>Amount</label>
+                                        <input onChange="amountChange()" onkeyup="amountChange()" type="number"
+                                               min="1.00"
+                                               name="amount"
+                                               max="{{ order_details.total_due|floatformat:2 }}"
+                                               step=".01"
+                                               required class="form-control"
+                                               placeholder="Enter amount"/>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary"
-                                data-dismiss="modal">
-                            Cancel
-                        </button>
-                        <button type="submit" class="btn btn-primary">Pay</button>
-                    </div>
-                </form>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-round btn-secondary"
+                                    data-dismiss="modal">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-round btn-primary" id="submitBtn">Pay</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-    </div>
-    <!--Modal End-->
-    <ul class="ContextMenu ContextMenu--theme-default" id="contextMenu" data-contextmenu="0" tabindex="-1">
-        <li class="ContextMenu-item" tabindex="0" id="deleteBtn"
-            onclick="confirmDelete()" data-payment-id="-1" data-item-id="-1" data-delete-row data-amount="0"
-            data-delete-type="payment">
-            <i class="fa fa-minus-circle context-menu-icon"></i>
-            <strong style="margin-left: 20px;">Delete</strong>
-        </li>
-    </ul>
+        <!--Modal End-->
+    {% endif %}
+    {% if perms.product.delete_paymenthistory or perms.product.change_order %}
+        <ul class="ContextMenu ContextMenu--theme-default" id="contextMenu" data-contextmenu="0" tabindex="-1">
+            <li class="ContextMenu-item" tabindex="0" id="deleteBtn"
+                onclick="confirmDelete()" data-payment-id="-1" data-item-id="-1" data-delete-row data-amount="0"
+                data-delete-type="payment">
+                <i class="fa fa-minus-circle context-menu-icon"></i>
+                <strong style="margin-left: 20px;">Delete</strong>
+            </li>
+        </ul>
+    {% endif %}
 {% endblock %}
 {% block add_new_js %}
     <script src="{% static  '/product/js/check_field_error.js' %}"></script>
@@ -285,92 +291,104 @@
 
         }
 
-        function invoiceListContextMenu() {
-            $('.invoiceRow').on('contextmenu', function (e) {
-                if ($('#invoiceTableBody').children().length > 1) {
+        {% if perms.product.change_order %}
+            function invoiceListContextMenu() {
+                $('.invoiceRow').on('contextmenu', function (e) {
+                    if ($('#invoiceTableBody').children().length > 1) {
+                        e.preventDefault();
+                        $('#contextMenu').css({
+                            top: e.pageY + 'px',
+                            left: e.pageX + 'px'
+                        }).addClass('is-open');
+                        var itemId = $(this).data('id');
+                        var amount = $(this).data('amount')
+                        $('#deleteBtn').data('itemId', itemId);
+                        $('#deleteBtn').data('deleteRow', this);
+                        $('#deleteBtn').data('deleteType', 'item');
+                        $('#deleteBtn').data('amount', amount);
+                    }
+                });
+            }
+
+            function itemDeleteSuccess(data, textStatus, jqXHR) {
+                $('#posPrintBtn').attr('onClick', 'printPosInvoice(`' + data + '`)');
+                var deleteRow = $('#deleteBtn').data('deleteRow');
+                var grandTotal = parseFloat($('#grandTotalTxt').text());
+                var totalDue = parseFloat($('#totalDueTxt').text());
+                var paidTotal = parseFloat($('#paidTotalTxt').text());
+                var deletedAmount = parseFloat($('#deleteBtn').data('amount'));
+                grandTotal = grandTotal - deletedAmount;
+                $('#grandTotalTxt').text(grandTotal.toFixed(2));
+                $('#totalDueTxt').text((grandTotal - paidTotal).toFixed(2));
+                $('input[name="amount"]').attr('max', (grandTotal - paidTotal).toFixed(2));
+                $(deleteRow).remove();
+                showToast('Item has been deleted', 'success');
+            }
+
+            function itemDeleteError(data, textStatus, jqXHR) {
+                var errors = data.responseJSON ? data.responseJSON : [{'error': ''}, {'error2': ''}];
+                if ('permission_denied' in errors) {
+                    showToast(errors.permission_denied, 'error');
+                } else {
+                    showToast('Error occurred while deleting item', 'error');
+                }
+            }
+
+            function itemDelete() {
+                var itemId = $('#deleteBtn').data('itemId');
+                ajaxRequest({
+                    csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+                    item_id: itemId
+                }, 'itemDelete');
+            }
+        {% endif %}
+        {% if perms.product.delete_paymenthistory %}
+            function paymentListContextMenu() {
+                $('.paymentList').on('contextmenu', function (e) {
                     e.preventDefault();
                     $('#contextMenu').css({
                         top: e.pageY + 'px',
                         left: e.pageX + 'px'
                     }).addClass('is-open');
-                    var itemId = $(this).data('id');
+                    var paymentId = $(this).data('paymentId');
                     var amount = $(this).data('amount')
-                    $('#deleteBtn').data('itemId', itemId);
+                    $('#deleteBtn').data('paymentId', paymentId);
                     $('#deleteBtn').data('deleteRow', this);
-                    $('#deleteBtn').data('deleteType', 'item');
+                    $('#deleteBtn').data('deleteType', 'payment');
                     $('#deleteBtn').data('amount', amount);
+                });
+            }
+
+            function paymentDeleteSuccess(data, textStatus, jqXHR) {
+                $('#posPrintBtn').attr('onClick', 'printPosInvoice(`' + data + '`)');
+                var deleteRow = $('#deleteBtn').data('deleteRow');
+                var totalDue = parseFloat($('#totalDueTxt').text());
+                var paidTotal = parseFloat($('#paidTotalTxt').text());
+                var paidAmount = parseFloat($('#deleteBtn').data('amount'));
+                $('#totalDueTxt').text((totalDue + paidAmount).toFixed(2));
+                $('#paidTotalTxt').text((paidTotal - paidAmount).toFixed(2));
+                $('input[name="amount"]').attr('max', (totalDue + paidAmount).toFixed(2));
+                $(deleteRow).remove();
+                showToast('Payment has been deleted', 'success');
+            }
+
+            function paymentDeleteError(data, textStatus, jqXHR) {
+                var errors = data.responseJSON ? data.responseJSON : [{'error': ''}, {'error2': ''}];
+                if ('permission_denied' in errors) {
+                    showToast(errors.permission_denied, 'error');
+                } else {
+                    showToast('Error Deleting payment history', 'error');
                 }
-            });
-        }
+            }
 
-        function paymentListContextMenu() {
-            $('.paymentList').on('contextmenu', function (e) {
-                e.preventDefault();
-                $('#contextMenu').css({
-                    top: e.pageY + 'px',
-                    left: e.pageX + 'px'
-                }).addClass('is-open');
-                var paymentId = $(this).data('paymentId');
-                var amount = $(this).data('amount')
-                $('#deleteBtn').data('paymentId', paymentId);
-                $('#deleteBtn').data('deleteRow', this);
-                $('#deleteBtn').data('deleteType', 'payment');
-                $('#deleteBtn').data('amount', amount);
-            });
-        }
-
-        function paymentDeleteSuccess(data, textStatus, jqXHR) {
-
-            $('#posPrintBtn').attr('onClick', 'printPosInvoice(`' + data + '`)');
-            var deleteRow = $('#deleteBtn').data('deleteRow');
-            var totalDue = parseFloat($('#totalDueTxt').text());
-            var paidTotal = parseFloat($('#paidTotalTxt').text());
-            var paidAmount = parseFloat($('#deleteBtn').data('amount'));
-            $('#totalDueTxt').text((totalDue + paidAmount).toFixed(2));
-            $('#paidTotalTxt').text((paidTotal - paidAmount).toFixed(2));
-            $('input[name="amount"]').attr('max', (totalDue + paidAmount).toFixed(2));
-            $(deleteRow).remove();
-            showToast('Payment has been deleted', 'success');
-        }
-
-        function paymentDeleteError(data, textStatus, jqXHR) {
-            showToast('Error Deleting payment history', 'error');
-        }
-
-        function paymentDelete() {
-            var paymentId = $('#deleteBtn').data('paymentId');
-            ajaxRequest({
-                csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
-                payment_id: paymentId
-            }, 'paymentDelete');
-        }
-
-        function itemDeleteSuccess(data, textStatus, jqXHR) {
-            $('#posPrintBtn').attr('onClick', 'printPosInvoice(`' + data + '`)');
-            var deleteRow = $('#deleteBtn').data('deleteRow');
-            var grandTotal = parseFloat($('#grandTotalTxt').text());
-            var totalDue = parseFloat($('#totalDueTxt').text());
-            var paidTotal = parseFloat($('#paidTotalTxt').text());
-            var deletedAmount = parseFloat($('#deleteBtn').data('amount'));
-            grandTotal = grandTotal - deletedAmount;
-            $('#grandTotalTxt').text(grandTotal.toFixed(2));
-            $('#totalDueTxt').text((grandTotal - paidTotal).toFixed(2));
-            $('input[name="amount"]').attr('max', (grandTotal - paidTotal).toFixed(2));
-            $(deleteRow).remove();
-            showToast('Item has been deleted', 'success');
-        }
-
-        function itemDeleteError(data, textStatus, jqXHR) {
-            showToast('Error occurred while deleting item', 'error');
-        }
-
-        function itemDelete() {
-            var itemId = $('#deleteBtn').data('itemId');
-            ajaxRequest({
-                csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
-                item_id: itemId
-            }, 'itemDelete');
-        }
+            function paymentDelete() {
+                var paymentId = $('#deleteBtn').data('paymentId');
+                ajaxRequest({
+                    csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+                    payment_id: paymentId
+                }, 'paymentDelete');
+            }
+        {% endif %}
 
         function confirmDelete() {
             var type = $('#deleteBtn').data('deleteType');
@@ -385,12 +403,26 @@
             preventAutoFormSubmission();
             checkFieldError();
             /*------------*/
-            paymentListContextMenu();
-            invoiceListContextMenu();
-            $(document).click(function () {
-                $('#contextMenu').removeClass('is-open');
-            });
-
+            {% if perms.product.delete_paymenthistory %}
+                paymentListContextMenu();
+            {% endif %}
+            {% if perms.product.change_order %}
+                invoiceListContextMenu();
+            {% endif %}
+            {% if perms.product.add_paymenthistory %}
+                $('#paymentForm').on('submit', function (e) {
+                    if ($("#submitBtn").prop('attempted') == 'true') {
+                        e.preventDefault();
+                    } else {
+                        $("#submitBtn").prop("attempted", 'true');
+                    }
+                });
+            {% endif %}
+            {% if perms.product.change_order or perms.product.delete_paymenthistory %}
+                $(document).click(function () {
+                    $('#contextMenu').removeClass('is-open');
+                });
+            {% endif %}
         });
     </script>
 {% endblock %}

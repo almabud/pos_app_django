@@ -4,12 +4,6 @@
     <link href="{% static '/user/css/add_new_employee.css' %}" rel="stylesheet"/>
     <form action="{% url 'product:new_product' %}" method="POST" enctype="multipart/form-data" id="productFrom">
         {% csrf_token %}
-        {% for field in form %}
-            {{ field.errors }}
-            {% for error in field.errors %}
-                <p>{{ field.name }}: {{ error }} </p>
-            {% endfor %}
-        {% endfor %}
         <div class="row">
             <div class="col-md-12">
                 <div class="card card-user">
@@ -95,12 +89,7 @@
                             </div>
                             <div class="col-md-6 pl-md-1">
                                 <div class="form-group">
-                                    <label for="gsm">
-                                        GSM <span class="error_text" id="gsm_error_text"></span>
-                                        {% if form.gsm.errors %}
-                                            {{ form.gsm.errors|striptags|json_script:"gsm_error" }}
-                                        {% endif %}
-                                    </label>
+                                    <label for="gsm">GSM</label>
                                     {{ form.gsm }}
                                 </div>
                             </div>
@@ -116,7 +105,7 @@
                                                 <span class="success_text" id="color_success_text"
                                                       style="color: green;"></span>
                                                 {% if form.color.errors %}
-                                                    {{ form.color.errors|striptags|json_script:"category_error" }}
+                                                    {{ form.color.errors|striptags|json_script:"color_error" }}
                                                 {% endif %}
                                             </label>
                                             {{ form.color }}
@@ -144,7 +133,7 @@
                                                 <span class="success_text" id="size_success_text"
                                                       style="color: green;"></span>
                                                 {% if form.size.errors %}
-                                                    {{ form.size.errors|striptags|json_script:"gsm_error" }}
+                                                    {{ form.size.errors|striptags|json_script:"size_error" }}
                                                 {% endif %}
                                             </label>
                                             {{ form.size }}
@@ -265,7 +254,7 @@
                                     <label>Total Stock
                                         <span class="error_text" id="stock_total_error_text"></span>
                                         {% if form.stock_total.errors %}
-                                            {{ form.stock_total.errors|striptags|json_script:"profit_error" }}
+                                            {{ form.stock_total.errors|striptags|json_script:"stock_total_error" }}
                                         {% endif %}
                                     </label>
                                     {{ form.stock_total }}
@@ -284,18 +273,17 @@
     </form>
 
     {% block add_new_js %}
-        <script src="{% static '/product/js/check_field_error.js' %}"></script>
         <script src="{% static '/product/js/add_new_product.js' %}"></script>
         <script>
             $(document).ready(function () {
                 initDatatable();
                 preventAutoFormSubmission();
-                checkFieldError();
                 /*----------------------*/
                 initSize();
                 initColor();
                 initCategory();
                 initProduct();
+                checkProductFieldError();
                 $('#productForm').on('submit', function (e) {
                     if ($("#submitBtn").prop('attempted') == 'true') {
                         e.preventDefault();

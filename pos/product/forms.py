@@ -84,7 +84,7 @@ class AddNewProductForm(forms.Form):
                                        widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'product_input',
                                                                      'placeholder': 'Enter Product Name eg. Handle Bag'}))
     gsm = forms.ChoiceField(required=False, choices=GSM_CHOICES, widget=forms.Select(attrs={'class': 'form-control'}))
-    product_description = forms.CharField(required=False, widget=forms.Textarea(attrs={'class': 'form-control'}))
+    product_description = forms.CharField(required=False, widget=forms.Textarea(attrs={'class': 'form-control', 'id': 'descriptionInput'}))
     bag_purchase_price = forms.DecimalField(widget=forms.NumberInput(attrs={'class': 'form-control'}))
     marketing_cost = forms.DecimalField(widget=forms.NumberInput(attrs={'class': 'form-control'}))
     transport_cost = forms.DecimalField(widget=forms.NumberInput(attrs={'class': 'form-control'}))

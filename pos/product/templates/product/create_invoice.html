@@ -20,10 +20,10 @@
                     <h7 class="vertical-md-align" style="color: green;">{{ order_id }} no invoice has been created.</h7>
                 </div>
                 <div class="col-12 col-md-6">
-                    <button type="submit" class="btn btn-primary btn-round" style="float: right">
+                    <button type="submit" class="btn btn-round btn-primary btn-round" style="float: right">
                         Normal print
                     </button>
-                    <button type="button" class="btn btn-primary btn-round mr-2"
+                    <button type="button" class="btn btn-round btn-primary btn-round mr-2"
                             onclick="printPosInvoice(`{{ pos_invoice }}`)" style="float: right">
                         Pos print
                     </button>
@@ -257,6 +257,11 @@
                 });
 
                 $('#submitButton').on('click', function (e) {
+                     if ($("#submitButton").prop('attempted') == 'true') {
+                        e.preventDefault();
+                    } else {
+                        $("#submitButton").prop("attempted", 'true');
+                    }
                     if (!($('#paid_total_field').val())) {
                         e.preventDefault();
                     }

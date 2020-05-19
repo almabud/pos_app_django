@@ -374,6 +374,10 @@ class CustomerDetails(LoginRequiredMixin, PermissionRequiredMixin, TemplateView)
     permission_required = ('product.view_customer',)
     template_name = 'product/customer_details.html'
 
+    def handle_no_permission(self):
+        messages.error(self.request, 'You have no permission')
+        return HttpResponseRedirect(reverse('dashboard:dashboard'))
+
     def get_context_data(self, **kwargs):
         customer_id = kwargs['customer_id']
         customer_details = Customer.objects.get_customer_details(customer_id)
@@ -405,12 +409,22 @@ class CustomerDetails(LoginRequiredMixin, PermissionRequiredMixin, TemplateView)
                 return JsonResponse(form.errors, status=400)
 
 
-class OrderList(View):
-    def get(self, request):
-        return render(request, 'product/order_list.html', {"order_list": Order.objects.get_all_order()})
+class OrderList(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ('product.view_order',)
+    template_name = 'product/order_list.html'
+
+    def handle_no_permission(self):
+        messages.error(self.request, 'You have no permission')
+        return HttpResponseRedirect(reverse('dashboard:dashboard'))
+
+    def get_context_data(self, **kwargs):
+        kwargs['order_list'] = Order.objects.get_all_order()
+        return super().get_context_data(**kwargs)
 
     def post(self, request):
         if request.is_ajax():
+            if not self.request.user.has_perm('product.delete_order'):
+                return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
             id = request.POST['order_id']
             if id:
                 if Order.objects.delete_order(id):
@@ -421,9 +435,14 @@ class OrderList(View):
                 return JsonResponse('error', status=400, safe=False)
 
 
-class CreateInvoice(TemplateView):
+class CreateInvoice(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ('product.add_order',)
     template_name = 'product/create_invoice.html'
     ItemFormSet = formset_factory(ItemForm, formset=BaseItemFormSet, extra=0)
+
+    def handle_no_permission(self):
+        messages.error(self.request, 'You have no permission')
+        return HttpResponseRedirect(reverse('dashboard:dashboard'))
 
     def get_context_data(self, **kwargs):
         product_list = Product.objects.get_all_product_stock_filter()
@@ -449,15 +468,17 @@ class CreateInvoice(TemplateView):
             return self.render_to_response(
                 self.get_context_data(pos_invoice=generate_pos_invoice(order_details), order_id=created_order.id))
         else:
-            # for field in order_form:
-            #     for error in field.errors:
-            #         print(error)
             return self.render_to_response(
                 self.get_context_data(order=order_form, selected_items=item_formset.cleaned_data))
 
 
-class OrderDetail(TemplateView):
+class OrderDetail(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ('product.view_order',)
     template_name = 'product/order_details.html'
+
+    def handle_no_permission(self):
+        messages.error(self.request, 'You have no permission')
+        return HttpResponseRedirect(reverse('dashboard:dashboard'))
 
     def get_context_data(self, **kwargs):
         order_details = Order.objects.get_order_detail(order_id=self.kwargs['order_id'])
@@ -470,6 +491,8 @@ class OrderDetail(TemplateView):
     def post(self, request, order_id):
         if request.is_ajax():
             if 'payment_id' in request.POST:
+                if not self.request.user.has_perm('product.delete_paymenthistory'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 id = request.POST['payment_id']
                 if id:
                     if Order.objects.delete_payment(id):
@@ -482,6 +505,8 @@ class OrderDetail(TemplateView):
                     return JsonResponse('error', status=400, safe=False)
             elif 'item_id' in request.POST:
                 id = request.POST['item_id']
+                if not self.request.user.has_perm('product.change_order'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 if id:
                     if Order.objects.delete_ordered_item(id):
                         order_details = Order.objects.get_order_detail(order_id=order_id)
@@ -491,19 +516,26 @@ class OrderDetail(TemplateView):
                         return JsonResponse('error', status=400, safe=False)
                 else:
                     return JsonResponse('error', status=400, safe=False)
+        if not self.request.user.has_perm('product.add_paymenthistory'):
+            return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
         current_user = request.user
         new_payment = Order.objects.make_payment(order_id, request.POST['amount'], current_user)
         return HttpResponseRedirect(self.request.path_info)
 
 
-class UtilityBill(TemplateView):
+class UtilityBill(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ('product.view_othercost',)
     template_name = 'product/other_cost_list.html'
+
+    def handle_no_permission(self):
+        messages.error(self.request, 'You have no permission')
+        return HttpResponseRedirect(reverse('dashboard:dashboard'))
 
     def get_context_data(self, **kwargs):
         data = OtherCost.objects.all().order_by('-date')
-        if 'form' not in kwargs:
+        if 'form' not in kwargs and self.request.user.has_perm('product.add_othercost'):
             form = OtherCostForm()
-        else:
+        elif self.request.user.has_perm('product.change_othercost'):
             form = kwargs['form']
         kwargs['other_cost_list'] = data
         kwargs['form'] = form
@@ -513,11 +545,15 @@ class UtilityBill(TemplateView):
         data = request.POST
         if request.is_ajax():
             if 'utility_bill_dlt_id' in data and data['utility_bill_dlt_id']:
+                if not self.request.user.has_perm('product.delete_othercost'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 if OtherCost.objects.delete_utility_bill(data['utility_bill_dlt_id']):
                     return JsonResponse('success', status=200, safe=False)
                 else:
                     return JsonResponse('error', status=400, safe=False)
             else:
+                if not self.request.user.has_perm('product.change_othercost'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 form = OtherCostForm(data)
                 if form.is_valid():
                     id = data['id']
@@ -528,6 +564,8 @@ class UtilityBill(TemplateView):
                 else:
                     return JsonResponse('error', status=400, safe=False)
         else:
+            if not self.request.user.has_perm('product.add_othercost'):
+                return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
             form = OtherCostForm(data)
             if form.is_valid():
                 form.save()

@@ -52,66 +52,77 @@
 {% endblock %}
 
 {% block outside_wrapper %}
-    <ul class="ContextMenu ContextMenu--theme-default" id="contextMenu" data-contextmenu="0" tabindex="-1">
-        <li class="ContextMenu-item" tabindex="0" id="orderDeleteBtn"
-            onclick="confirmDelete()" data-order-id="-1" data-delete-row>
-            <i class="fa fa-minus-circle context-menu-icon"></i>
-            <strong style="margin-left: 20px;">Delete</strong>
-        </li>
-    </ul>
+    {% if perms.product.delete_order %}
+        <ul class="ContextMenu ContextMenu--theme-default" id="contextMenu" data-contextmenu="0" tabindex="-1">
+            <li class="ContextMenu-item" tabindex="0" id="orderDeleteBtn"
+                onclick="confirmDelete()" data-order-id="-1" data-delete-row>
+                <i class="fa fa-minus-circle context-menu-icon"></i>
+                <strong style="margin-left: 20px;">Delete</strong>
+            </li>
+        </ul>
+    {% endif %}
 {% endblock %}
 {% block add_new_js %}
     <script>
-        function orderListContextMenu() {
-            $('.orderRow').on('contextmenu', function (e) {
-                e.preventDefault();
-                $('#contextMenu').css({
-                    top: e.pageY + 'px',
-                    left: e.pageX + 'px'
-                }).addClass('is-open');
-                var orderId = $(this).data('orderId');
-                $('#orderDeleteBtn').data('orderId', orderId);
-                $('#orderDeleteBtn').data('deleteRow', this);
-            })
-        }
-
-        function deleteOrder() {
-            var id = $('#orderDeleteBtn').data('orderId');
-            var deleteRow = $('#orderDeleteBtn').data('deleteRow');
-            var dataTable = $('#product_list').DataTable();
-            $.ajax({
-                url: window.location.href,
-                type: 'POST',
-                data: {
-                    csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
-                    order_id: id
-                },
-                success: function (data, textStatus, jqXHR) {
-                    dataTable.row($(deleteRow)).remove().draw();
-                    showToast('Order has been deleted', 'success');
-                },
-                error: function (data, textStatus, jqXHR) {
-                    showToast('Order can\'t be deleted', 'error');
-                }
-            });
-        }
-
-        function confirmDelete() {
-            var action = confirm('Do yo really want to delete this order??');
-            if (action) {
-                deleteOrder();
+        {% if perms.product.delete_order %}
+            function orderListContextMenu() {
+                $('.orderRow').on('contextmenu', function (e) {
+                    e.preventDefault();
+                    $('#contextMenu').css({
+                        top: e.pageY + 'px',
+                        left: e.pageX + 'px'
+                    }).addClass('is-open');
+                    var orderId = $(this).data('orderId');
+                    $('#orderDeleteBtn').data('orderId', orderId);
+                    $('#orderDeleteBtn').data('deleteRow', this);
+                })
             }
 
-        }
+            function deleteOrder() {
+                var id = $('#orderDeleteBtn').data('orderId');
+                var deleteRow = $('#orderDeleteBtn').data('deleteRow');
+                var dataTable = $('#product_list').DataTable();
+                $.ajax({
+                    url: window.location.href,
+                    type: 'POST',
+                    data: {
+                        csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+                        order_id: id
+                    },
+                    success: function (data, textStatus, jqXHR) {
+                        dataTable.row($(deleteRow)).remove().draw();
+                        showToast('Order has been deleted', 'success');
+                    },
+                    error: function (data, textStatus, jqXHR) {
+                        var errors = data.responseJSON ? data.responseJSON : [{'error': ''}, {'error2': ''}];
+                        if ('permission_denied' in errors) {
+                            showToast(errors.permission_denied, 'error');
+                        } else {
+                            showToast('Order can\'t be deleted', 'error');
+                        }
+                    }
+                });
+            }
+
+            function confirmDelete() {
+                var action = confirm('Do yo really want to delete this order??');
+                if (action) {
+                    deleteOrder();
+                }
+
+            }
+        {% endif %}
 
         $(document).ready(function () {
             initDatatable();
             preventAutoFormSubmission();
             /*------------*/
-            orderListContextMenu();
-            $(document).click(function () {
-                $('#contextMenu').removeClass('is-open');
-            });
+            {% if perms.product.delete_order %}
+                orderListContextMenu();
+                $(document).click(function () {
+                    $('#contextMenu').removeClass('is-open');
+                });
+            {% endif %}
         });
     </script>
 {% endblock %}

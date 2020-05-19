@@ -126,3 +126,142 @@ function initProduct() {
         initProduct();
     });
 }
+
+function checkProductFieldError() {
+    if ($('#product_name_error').length) {
+        var productNameError = JSON.parse($('#product_name_error').text());
+        $('#product_name_error_text').text(productNameError);
+        $('#product_input').addClass('error_border');
+
+    } else {
+        productNameError = '';
+        $('#product_input').removeClass('error_border');
+    }
+    if ($('#product_description_error').length) {
+        var productDescriptionError = JSON.parse($('#product_description_error').text());
+        $('#product_description_error_text').text(productDescriptionError);
+        $('#descriptionInput').addClass('error_border');
+
+    } else {
+        productDescriptionError = '';
+        $('#descriptionInput').removeClass('error_border');
+    }
+    if ($('#supplier_error').length) {
+        var productSupplierError = JSON.parse($('#supplier_error').text());
+        $('#supplier_error_text').text(productSupplierError);
+        $('#supplier_select').addClass('error_border');
+
+    } else {
+        productSupplierError = '';
+        $('#supplier_select').removeClass('error_border');
+    }
+    if ($('#category_error').length) {
+        var productCategoryError = JSON.parse($('#category_error').text());
+        $('#category_error_text').text(productCategoryError);
+        $('#category_input').addClass('error_border');
+
+    } else {
+        productCategoryError = '';
+        $('#category_input').removeClass('error_border');
+    }
+    if ($('#color_error').length) {
+        var productColorError = JSON.parse($('#color_error').text());
+        $('#color_error_text').text(productColorError);
+        $('#color_input').addClass('error_border');
+
+    } else {
+        productColorError = '';
+        $('#color_input').removeClass('error_border');
+    }
+
+    if ($('#size_error').length) {
+        var productSizeError = JSON.parse($('#size_error').text());
+        $('#size_error_text').text(productSizeError);
+        $('#size_input').addClass('error_border');
+
+    } else {
+        productSizeError = '';
+        $('#size_input').removeClass('error_border');
+    }
+    if ($('#bag_purchase_price_error').length) {
+        var productPurchaseError = JSON.parse($('#bag_purchase_price_error').text());
+        $('#bag_purchase_price_error_text').text(productPurchaseError);
+        $('#id_bag_purchase_price').addClass('error_border');
+
+    } else {
+        productPurchaseError = '';
+        $('#id_bag_purchase_price').removeClass('error_border');
+    }
+    if ($('#transport_cost_error').length) {
+        var productTransportError = JSON.parse($('#transport_cost_error').text());
+        $('#transport_cost_error_text').text(productTransportError);
+        $('#id_transport_cost').addClass('error_border');
+
+    } else {
+        productTransportError = '';
+        $('#id_transport_cost').removeClass('error_border');
+    }
+    if ($('#marketing_cost_error').length) {
+        var productMarketingError = JSON.parse($('#marketing_cost_error').text());
+        $('#marketing_cost_error_text').text(productMarketingError);
+        $('#id_marketing_cost').addClass('error_border');
+
+    } else {
+        productMarketingError = '';
+        $('#id_marketing_cost').removeClass('error_border');
+    }
+    if ($('#vat_error').length) {
+        var productVatError = JSON.parse($('#vat_error').text());
+        $('#vat_error_text').text(productVatError);
+        $('#id_vat').addClass('error_border');
+
+    } else {
+        productVatError = '';
+        $('#id_vat').removeClass('error_border');
+    }
+    if ($('#printing_error').length) {
+        var productPrintingError = JSON.parse($('#printing_error').text());
+        $('#printing_error_text').text(productPrintingError);
+        $('#id_printing_cost').addClass('error_border');
+
+    } else {
+        productPrintingError = '';
+        $('#id_printing_cost').removeClass('error_border');
+    }
+    if ($('#profit_error').length) {
+        var productProfitError = JSON.parse($('#profit_error').text());
+        $('#profit_error_text').text(productProfitError);
+        $('#id_profit').addClass('error_border');
+
+    } else {
+        productProfitError = '';
+        $('#id_profit').removeClass('error_border');
+    }
+    if ($('#discount_error').length) {
+        var productDiscountError = JSON.parse($('#discount_error').text());
+        $('#discount_error_text').text(productDiscountError);
+        $('#id_discount_percent').addClass('error_border');
+
+    } else {
+        productDiscountError = '';
+        $('#id_discount_percent').removeClass('error_border');
+    }
+    if ($('#discount_min_purchase_error').length) {
+        var productDiscountMinError = JSON.parse($('#discount_min_purchase_error').text());
+        $('#discount_min_purchase_error_text').text(productDiscountMinError);
+        $('#id_discount_min_purchase').addClass('error_border');
+
+    } else {
+        productDiscountMinError = '';
+        $('#id_discount_min_purchase').removeClass('error_border');
+    }
+    if ($('#stock_total_error').length) {
+        var productStockError = JSON.parse($('#stock_total_error').text());
+        $('#stock_total_error_text').text(productStockError);
+        $('#id_stock_total').addClass('error_border');
+
+    } else {
+        productStockError = '';
+        $('#id_stock_total').removeClass('error_border');
+    }
+}
