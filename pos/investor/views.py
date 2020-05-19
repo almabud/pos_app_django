@@ -5,12 +5,8 @@ from json import JSONEncoder
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.core import serializers
-from django.core.exceptions import PermissionDenied
-from django.core.serializers.json import DjangoJSONEncoder
-from django.db.models import Count, Sum, F, QuerySet
 from django.http import JsonResponse, HttpResponseRedirect
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localtime, now
 from django.views.generic import TemplateView
@@ -29,7 +25,7 @@ class InvestorList(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
         return HttpResponseRedirect(reverse('dashboard:dashboard'))
 
     def get_context_data(self, **kwargs):
-        if self.request.user.has_perm('investor.add_shareholder', 'investor.add_investhistory'):
+        if self.request.user.has_perm('investor.add_shareholder') and self.request.user.has_perm('investor.add_investhistory'):
             kwargs['investor_form'] = InvestorForm()
             kwargs['invest_form'] = InvestForm()
         kwargs['investors'] = ShareHolder.objects.all_investor()
@@ -156,7 +152,7 @@ class ShareholderDetails(LoginRequiredMixin, PermissionRequiredMixin, TemplateVi
                 investor_details.latest_profit_percent = profit['this_month_profit_percent']
 
         investor_details.total_earning = total_profit
-        if self.request.user.has_perm('investor.add_shareholder', 'investor.add_investhistory'):
+        if self.request.user.has_perm('investor.add_shareholder') and self.request.user.has_perm('investor.add_investhistory'):
             kwargs['investor_form'] = InvestorForm(initial={
                 'name': investor_details.name,
                 'phone_no': investor_details.phone_no,

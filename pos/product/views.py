@@ -1,12 +1,15 @@
 import json
 from datetime import datetime
 
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Prefetch
 from django.forms import formset_factory
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect
 
 # Create your views here.
+from django.urls import reverse
 from django.views import View
 
 # from product.models import ProductTransaction
@@ -18,8 +21,13 @@ from product.models import Product, Supplier, Customer, Order, ProductVariant, S
 from scripts.pos_invoice_genarator import generate_pos_invoice
 
 
-class ProductList(TemplateView):
+class ProductList(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ('product.view_product', 'product.view_productvariant')
     template_name = 'product/product_list.html'
+
+    def handle_no_permission(self):
+        messages.error(self.request, 'You have no permission')
+        return HttpResponseRedirect(reverse('dashboard:dashboard'))
 
     def get_context_data(self, **kwargs):
         kwargs['product_list'] = Product.objects.get_all_product()
@@ -27,6 +35,8 @@ class ProductList(TemplateView):
 
     def post(self, request):
         if request.is_ajax():
+            if not self.request.user.has_perm('product.delete_product'):
+                return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
             id = request.POST['product_id']
             if id:
                 if Product.objects.delete_product(id):
@@ -37,8 +47,13 @@ class ProductList(TemplateView):
                 return JsonResponse('error', status=400, safe=False)
 
 
-class ProductDetails(TemplateView):
+class ProductDetails(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ('product.view_product', 'product.view_productvariant')
     template_name = 'product/product_details.html'
+
+    def handle_no_permission(self):
+        messages.error(self.request, 'You have no permission')
+        return HttpResponseRedirect(reverse('dashboard:dashboard'))
 
     def get_context_data(self, **kwargs):
         product_id = kwargs['product_id']
@@ -47,18 +62,23 @@ class ProductDetails(TemplateView):
             'product_name': product_details.product_name,
             'product_description': product_details.product_description
         })
-        kwargs['product_form'] = product_edit_form
+        if self.request.user.has_perm('product.change_product'):
+            kwargs['product_form'] = product_edit_form
         kwargs['product_details'] = product_details
         return super().get_context_data(**kwargs)
 
     def post(self, request, product_id):
         if 'variant_id' in request.POST and request.POST['variant_id']:
+            if not self.request.user.has_perm('product.delete_product'):
+                return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
             variant_id = request.POST['variant_id']
             if ProductVariant.objects.delete_variant(variant_id):
                 return JsonResponse("success", status=201, safe=False)
             else:
                 return JsonResponse('error', status=400, safe=False)
         else:
+            if not self.request.user.has_perm('product.change_product'):
+                return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
             form = ProductForm(request.POST)
             if form.is_valid():
                 cleaned_data = form.cleaned_data
