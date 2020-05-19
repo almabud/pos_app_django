@@ -498,10 +498,10 @@ class OrderManager(models.Manager):
     def get_all_order(self):
         data = self.prefetch_related('ordered_items').select_related('customer', 'sold_by') \
             .annotate(total_item=Coalesce(Sum('ordered_items__quantity'), Value(0)),
-                      total_billed=Sum(
+                      total_billed=Coalesce(Sum(
                           (F('ordered_items__quantity') * F('ordered_items__price_per_product'))
                           * (Value(1) - (F('ordered_items__discount_percent') / 100.00)),
-                          output_field=FloatField()),
+                          output_field=FloatField()), Value(0)),
                       ).annotate(
             total_due=Case(
                 When(is_paid=False,
@@ -511,8 +511,7 @@ class OrderManager(models.Manager):
                               ) - F('paid_total')),
                 default=Value(0),
                 output_field=FloatField()
-            )).annotate(total_paid=F('total_billed') - F('total_due')).order_by(
-            '-total_due')
+            )).annotate(total_paid=Coalesce(F('total_billed') - F('total_due'), Value(0))).order_by('-total_due')
         return data
 
     def get_order_detail(self, order_id):

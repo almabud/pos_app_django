@@ -43,65 +43,76 @@
     {% csrf_token %}
 {% endblock %}
 {% block outside_wrapper %}
-    <ul class="ContextMenu ContextMenu--theme-default" id="contextMenu" data-contextmenu="0" tabindex="-1">
-        <li class="ContextMenu-item" tabindex="0" id="deleteBtn"
-            onclick="confirmDelete()" data-id="-1" data-delete-row
-            data-delete-type="payment">
-            <i class="fa fa-minus-circle context-menu-icon"></i>
-            <strong style="margin-left: 20px;">Delete</strong>
-        </li>
-    </ul>
+    {% if perms.product.delete_customer %}
+        <ul class="ContextMenu ContextMenu--theme-default" id="contextMenu" data-contextmenu="0" tabindex="-1">
+            <li class="ContextMenu-item" tabindex="0" id="deleteBtn"
+                onclick="confirmDelete()" data-id="-1" data-delete-row
+                data-delete-type="payment">
+                <i class="fa fa-minus-circle context-menu-icon"></i>
+                <strong style="margin-left: 20px;">Delete</strong>
+            </li>
+        </ul>
+    {% endif %}
 {% endblock %}
 {% block add_new_js %}
     <script src="{% static  '/product/js/ajax_request.js' %}"></script>
     <script>
-        function customerListContextMenu() {
-            $('.customerRow').on('contextmenu', function (e) {
-                e.preventDefault();
-                $('#contextMenu').css({
-                    top: e.pageY + 'px',
-                    left: e.pageX + 'px'
-                }).addClass('is-open');
-                var itemId = $(this).data('id');
-                $('#deleteBtn').data('id', itemId);
-                $('#deleteBtn').data('deleteRow', this);
-            });
-        }
-
-        function customerDeleteSuccess(data, textStatus, jqXHR) {
-            var deleteRow = $('#deleteBtn').data('deleteRow');
-            var dataTable = $('#product_list').DataTable();
-            dataTable.row($(deleteRow)).remove().draw();
-            showToast('Customer has been deleted', 'success');
-        }
-
-        function customerDeleteError(data, textStatus, jqXHR) {
-            showToast('Error occurred while deleting customer', 'error');
-        }
-
-        function customerDelete() {
-            var customerId = $('#deleteBtn').data('id');
-            ajaxRequest({
-                csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
-                customer_id: customerId
-            }, 'customerDelete');
-        }
-
-        function confirmDelete() {
-            var action = confirm('Do you really want to delete this customer? Then all order belong to this customer will be deleted too.');
-            if (action) {
-                customerDelete();
+        {% if perms.product.delete_customer %}
+            function customerListContextMenu() {
+                $('.customerRow').on('contextmenu', function (e) {
+                    e.preventDefault();
+                    $('#contextMenu').css({
+                        top: e.pageY + 'px',
+                        left: e.pageX + 'px'
+                    }).addClass('is-open');
+                    var itemId = $(this).data('id');
+                    $('#deleteBtn').data('id', itemId);
+                    $('#deleteBtn').data('deleteRow', this);
+                });
             }
-        }
+
+            function customerDeleteSuccess(data, textStatus, jqXHR) {
+                var deleteRow = $('#deleteBtn').data('deleteRow');
+                var dataTable = $('#product_list').DataTable();
+                dataTable.row($(deleteRow)).remove().draw();
+                showToast('Customer has been deleted', 'success');
+            }
+
+            function customerDeleteError(data, textStatus, jqXHR) {
+                var errors = data.responseJSON ? data.responseJSON : [{'error': ''}, {'error2': ''}];
+                if ('permission_denied' in errors) {
+                    showToast(errors.permission_denied, 'error');
+                } else {
+                    showToast('Error occurred while deleting customer', 'error');
+                }
+            }
+
+            function customerDelete() {
+                var customerId = $('#deleteBtn').data('id');
+                ajaxRequest({
+                    csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+                    customer_id: customerId
+                }, 'customerDelete');
+            }
+
+            function confirmDelete() {
+                var action = confirm('Do you really want to delete this customer? Then all order belong to this customer will be deleted too.');
+                if (action) {
+                    customerDelete();
+                }
+            }
+        {% endif %}
 
         $(document).ready(function () {
             initDatatable();
             preventAutoFormSubmission();
             /*------------*/
-            customerListContextMenu();
-            $(document).click(function () {
-                $('#contextMenu').removeClass('is-open');
-            });
+            {% if perms.product.delete_customer %}
+                customerListContextMenu();
+                $(document).click(function () {
+                    $('#contextMenu').removeClass('is-open');
+                });
+            {% endif %}
         });
     </script>
 {% endblock %}

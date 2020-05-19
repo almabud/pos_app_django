@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Prefetch
 from django.forms import formset_factory
-from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
+from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render, redirect
 
 # Create your views here.
@@ -271,15 +271,24 @@ class AddNewProduct(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         return redirect('product:variant_list')
 
 
-class SupplierList(View):
-    def get(self, request):
-        return render(request, 'product/supplier_list.html', {"supplier_list": Supplier.objects.get_all_supplier()})
-        # return HttpResponse(all_products[0].quantity)
+class SupplierList(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ('product.view_supplier',)
+    template_name = 'product/supplier_list.html'
+
+    def handle_no_permission(self):
+        messages.error(self.request, 'You have no permission')
+        return HttpResponseRedirect(reverse('dashboard:dashboard'))
+
+    def get_context_data(self, **kwargs):
+        kwargs['supplier_list'] = Supplier.objects.get_all_supplier()
+        return super().get_context_data(**kwargs)
 
     def post(self, request):
         if request.is_ajax():
             id = request.POST['supplier_id']
             if id:
+                if not self.request.user.has_perm('product.delete_supplier'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 if Supplier.objects.delete_supplier(id):
                     return JsonResponse('success', status=200, safe=False)
                 else:
@@ -288,9 +297,14 @@ class SupplierList(View):
                 return JsonResponse('error', status=400, safe=False)
 
 
-class AddNewSupplier(FormView):
+class AddNewSupplier(LoginRequiredMixin, PermissionRequiredMixin, FormView):
+    permission_required = ('product.add_supplier',)
     template_name = 'product/create_supplier.html'
     form_class = AddNewSupplierForm
+
+    def handle_no_permission(self):
+        messages.error(self.request, 'You have no permission')
+        return HttpResponseRedirect(reverse('dashboard:dashboard'))
 
     def form_valid(self, form):
         # clean_form = form.cleaned_data
@@ -298,21 +312,28 @@ class AddNewSupplier(FormView):
         return redirect('product:supplier_list')
 
 
-class SupplierDetail(TemplateView):
+class SupplierDetail(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ('product.view_supplier', 'product.change_supplier')
     template_name = 'product/supplier_details.html'
+
+    def handle_no_permission(self):
+        messages.error(self.request, 'You have no permission')
+        return HttpResponseRedirect(reverse('dashboard:dashboard'))
 
     def get_context_data(self, **kwargs):
         supplier_id = kwargs['supplier_id']
         supplier_details = Supplier.objects.get_supplier_details(supplier_id)
-        supplier_edit_form = AddNewSupplierForm(initial={'name': supplier_details.name,
-                                                         'mobile_no': supplier_details.mobile_no,
-                                                         'address': supplier_details.address})
+        if self.request.user.has_perm('product.change_supplier'):
+            kwargs['form'] = AddNewSupplierForm(
+                initial={'name': supplier_details.name, 'mobile_no': supplier_details.mobile_no,
+                         'address': supplier_details.address})
         kwargs['supplier_details'] = supplier_details
-        kwargs['form'] = supplier_edit_form
         return super().get_context_data(**kwargs)
 
     def post(self, request, supplier_id):
         if request.is_ajax():
+            if not self.request.user.has_perm('product.change_supplier'):
+                return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
             data = request.POST
             form = AddNewSupplierForm(data)
             if form.is_valid():
@@ -323,14 +344,24 @@ class SupplierDetail(TemplateView):
                 return JsonResponse(form.errors, status=400)
 
 
-class CustomerList(View):
-    def get(self, request):
-        return render(request, 'product/customer_list.html', {"customer_list": Customer.objects.get_all_customer()})
+class CustomerList(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ('product.view_customer',)
+    template_name = 'product/customer_list.html'
+
+    def handle_no_permission(self):
+        messages.error(self.request, 'You have no permission')
+        return HttpResponseRedirect(reverse('dashboard:dashboard'))
+
+    def get_context_data(self, **kwargs):
+        kwargs['customer_list'] = Customer.objects.get_all_customer()
+        return super().get_context_data(**kwargs)
 
     def post(self, request):
         if request.is_ajax():
             id = request.POST['customer_id']
             if id:
+                if not self.request.user.has_perm('product.delete_customer'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 if Customer.objects.delete_customer(id):
                     return JsonResponse('success', status=200, safe=False)
                 else:
@@ -339,24 +370,31 @@ class CustomerList(View):
                 return JsonResponse('error', status=400, safe=False)
 
 
-class CustomerDetails(TemplateView):
+class CustomerDetails(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ('product.view_customer',)
     template_name = 'product/customer_details.html'
 
     def get_context_data(self, **kwargs):
         customer_id = kwargs['customer_id']
         customer_details = Customer.objects.get_customer_details(customer_id)
-        customer_edit_form = CustomerForm(initial={
-            'customer_name': customer_details.customer_name,
-            'customer_phone': customer_details.customer_phone,
-            'customer_address': customer_details.customer_address
-        })
-        kwargs['customer_form'] = customer_edit_form
+        if self.request.user.has_perm('product.change_customer'):
+            customer_edit_form = CustomerForm(initial={
+                'customer_name': customer_details.customer_name,
+                'customer_phone': customer_details.customer_phone,
+                'customer_address': customer_details.customer_address
+            })
+            kwargs['customer_form'] = customer_edit_form
         kwargs['customer_details'] = customer_details
         return super().get_context_data(**kwargs)
 
     def post(self, request, customer_id):
         if request.is_ajax():
-            form = CustomerForm(request.POST)
+            if not self.request.user.has_perm('product.change_customer'):
+                return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
+            customer = Customer.objects.filter(id=customer_id).first()
+            if customer is None:
+                raise Http404("Customer not found")
+            form = CustomerForm(request.POST, instance=customer)
             if form.is_valid():
                 edited_customer_info = form.cleaned_data
                 if Customer.objects.update_customer_details(id=customer_id, data=edited_customer_info):

@@ -13,9 +13,10 @@
                                 <div class="col-md-10 col-12 text-center text-md-left">
                                     <h5 class="card-title text-center">Customer ID- {{ customer_details.id }}</h5>
                                 </div>
-                                {% if customer_form %}
+                                {% if customer_form and perms.product.change_customer %}
                                     <div class="col-md-2 col-12">
-                                        <button type="button" class="btn min-width-120 btn-primary mr-2 float-md-right"
+                                        <button type="button"
+                                                class="btn btn-round min-width-120 btn-primary mr-2 float-md-right"
                                                 data-toggle="modal" data-target="#customerEditModal"
                                                 id="customerEditBtn">
                                             Edit
@@ -188,108 +189,115 @@
 {% endblock %}
 
 {% block outside_wrapper %}
-    <!-- The Product edit Modal -->
-    <div class="modal fade" id="customerEditModal" tabindex="-1" role="dialog"
-         aria-labelledby="supplierEditModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="supplierEditModalLabel">Edit Customer
-                        Info</h5>
+    {% if perms.product.change_customer %}
+        <!-- The Product edit Modal -->
+        <div class="modal fade" id="customerEditModal" tabindex="-1" role="dialog"
+             aria-labelledby="supplierEditModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="supplierEditModalLabel">Edit Customer
+                            Info</h5>
+                    </div>
+                    <form method="post" id="customerForm">
+                        {% csrf_token %}
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label>Name</label>
+                                        {{ customer_form.customer_name }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label>
+                                            Mobile No
+                                            <span class="error_text" id="customer_phone_error_text"></span>
+                                        </label>
+                                        {{ customer_form.customer_phone }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label>Address</label>
+                                        {{ customer_form.customer_address }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-round btn-secondary"
+                                    data-dismiss="modal">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-round btn-primary"
+                                    style="min-width: 78px;">
+                                <div class="spinner-grow display-none" role="status"
+                                     style="color:yellow;" id="spinner">
+                                    <span class="sr-only">Loading...</span>
+                                </div>
+                                <span id="save_btn_txt">Save</span>
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                <form method="post" id="customerForm">
-                    {% csrf_token %}
-                    {{ customer_form.is_edited_customer }}
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label>Name</label>
-                                    {{ customer_form.customer_name }}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label>
-                                        Mobile No
-                                        <span class="error_text" id="customer_phone_error_text"></span>
-                                    </label>
-                                    {{ customer_form.customer_phone }}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label>Address</label>
-                                    {{ customer_form.customer_address }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary"
-                                data-dismiss="modal">
-                            Cancel
-                        </button>
-                        <button type="submit" class="btn btn-primary"
-                                style="min-width: 78px;">
-                            <div class="spinner-grow display-none" role="status"
-                                 style="color:yellow;" id="spinner">
-                                <span class="sr-only">Loading...</span>
-                            </div>
-                            <span id="save_btn_txt">Save</span>
-                        </button>
-                    </div>
-                </form>
             </div>
         </div>
-    </div>
-    <!--The Product edit End-->
+        <!--The Product edit End-->
+    {% endif %}
 {% endblock %}
 {% block add_new_js %}
     <script src="{% static '/product/js/ajax_request.js' %}"></script>
     <script>
         /*-------------*/
-        function showSpinner() {
-            $('#spinner').removeClass('display-none');
-            $('#save_btn_txt').addClass('display-none');
-        }
-
-        function hideSpinner() {
-            $('#spinner').addClass('display-none');
-            $('#save_btn_txt').removeClass('display-none');
-        }
-
-        function initErrorText() {
-            $('#customer_phone_error_text').text('');
-            $('input[name="customer_phone"]').removeClass('error_border');
-        }
-
-        /*---------*/
-        function customerEditSuccess(data, textStatus, jqXHR) {
-            hideSpinner();
-            window.name = $('input[name="customer_name"]').val();
-            window.phone = $('input[name="customer_phone"]').val();
-            window.address = $('textarea[name="customer_address"]').val();
-            $('#customerNameTxt').val(window.name);
-            $('#customerPhoneTxt').val(window.phone);
-            $('#customerAddressTxt').val(window.address);
-            $('#customerEditModal').modal('hide');
-            showToast('Customer info edited successfully', 'success');
-        }
-
-        function customerEditError(data, textStatus, jqXHR) {
-            hideSpinner();
-            showToast('Error occurred during saving the customer info', 'error');
-            var errors = data.responseJSON;
-            if ('customer_phone' in errors) {
-                $('#customer_phone_error_text').text(errors.customer_phone[0]);
+        {% if perms.product.change_customer %}
+            function showSpinner() {
+                $('#spinner').removeClass('display-none');
+                $('#save_btn_txt').addClass('display-none');
             }
 
-        }
+            function hideSpinner() {
+                $('#spinner').addClass('display-none');
+                $('#save_btn_txt').removeClass('display-none');
+            }
+
+            function initErrorText() {
+                $('#customer_phone_error_text').text('');
+                $('input[name="customer_phone"]').removeClass('error_border');
+            }
+
+            /*---------*/
+            function customerEditSuccess(data, textStatus, jqXHR) {
+                hideSpinner();
+                window.name = $('input[name="customer_name"]').val();
+                window.phone = $('input[name="customer_phone"]').val();
+                window.address = $('textarea[name="customer_address"]').val();
+                $('#customerNameTxt').val(window.name);
+                $('#customerPhoneTxt').val(window.phone);
+                $('#customerAddressTxt').val(window.address);
+                $('#customerEditModal').modal('hide');
+                showToast('Customer info edited successfully', 'success');
+            }
+
+            function customerEditError(data, textStatus, jqXHR) {
+                hideSpinner();
+                var errors = data.responseJSON ? data.responseJSON : [{'error': ''}, {'error2': ''}];
+                if ('permission_denied' in errors) {
+                    showToast(errors.permission_denied, 'error');
+                } else {
+                    showToast('Error occurred during saving the customer info', 'error');
+                }
+                if ('customer_phone' in errors) {
+                    $('#customer_phone_error_text').text(errors.customer_phone[0]);
+                }
+
+            }
+        {% endif %}
 
         /*----------------------------------------------------*/
         $(document).ready(function () {
@@ -297,26 +305,28 @@
             initDatatable('#paymentHistoryDataTable');
             preventAutoFormSubmission();
             /*-------------*/
-            window.name = $(`{{ customer_form.customer_name }}`).val();
-            window.phone = $(`{{ customer_form.customer_phone }}`).val();
-            window.address = $(`{{ customer_form.customer_address }}`).val();
+            {% if perms.product.change_customer %}
+                window.name = $(`{{ customer_form.customer_name }}`).val();
+                window.phone = $(`{{ customer_form.customer_phone }}`).val();
+                window.address = $(`{{ customer_form.customer_address }}`).val();
 
-            $('#customerEditBtn').on('click', function () {
-                $('input[name="customer_name"]').val(window.name);
-                $('input[name="customer_phone"]').val(window.phone);
-                $('textarea[name="customer_address"]').val(window.address);
-                initErrorText();
-            });
+                $('#customerEditBtn').on('click', function () {
+                    $('input[name="customer_name"]').val(window.name);
+                    $('input[name="customer_phone"]').val(window.phone);
+                    $('textarea[name="customer_address"]').val(window.address);
+                    initErrorText();
+                });
 
-            $("#customerForm").bind("submit", function (e) {
-                e.preventDefault();
-                showSpinner();
-                if ($('input[name="customer_phone"]').val() == window.phone) {
-                    $('#isProductEdited').val(1)
-                }
-                var data = $(this).serialize();
-                ajaxRequest(data, 'customerEdit')
-            });
+                $("#customerForm").bind("submit", function (e) {
+                    e.preventDefault();
+                    showSpinner();
+                    if ($('input[name="customer_phone"]').val() == window.phone) {
+                        $('#isProductEdited').val(1)
+                    }
+                    var data = $(this).serialize();
+                    ajaxRequest(data, 'customerEdit')
+                });
+            {% endif %}
 
         });
 
