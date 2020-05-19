@@ -144,3 +144,8 @@
     box-shadow: inset 1px 2px 8px rgba(0, 0, 0, 0.07);
     cursor: pointer !important;
 }
+
+.datepicker-readonly {
+    background: white !important;
+    cursor: pointer !important;
+}

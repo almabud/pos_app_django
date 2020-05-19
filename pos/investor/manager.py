@@ -43,7 +43,7 @@ class InvestorManager(models.Manager):
     def create_investor(self, investor_data):
         try:
             new_investor = self.model(name=investor_data['name'], phone_no=investor_data['phone_no'],
-                                      address=investor_data['address'])
+                                      address=investor_data['address'], joining_date=investor_data['joining_date'])
             new_investor.save(using=self.db)
             from investor.models import InvestHistory
             invest = InvestHistory(share_holder=new_investor, amount=investor_data['amount'])

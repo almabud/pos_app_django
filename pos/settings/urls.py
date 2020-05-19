@@ -26,7 +26,7 @@ urlpatterns = [
                   path('admin/', admin.site.urls),
                   path('dashboard/', include('dashboard.urls', namespace='dashboard')),
                   path('product/', include('product.urls', namespace='product')),
-                  path('shareholders/', include('investor.urls', namespace='investor')),
+                  path('shareholder/', include('investor.urls', namespace='investor')),
                   path('liabilities/', include('liabilities.urls', namespace='liabilities')),
               ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL,
                                                                                          document_root=settings.STATIC_ROOT)

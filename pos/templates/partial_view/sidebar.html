@@ -130,7 +130,7 @@
                 </a>
              </li>
          {% endif %}
-         {% if perms.investor.view_shareholderreleaseHistory %}
+         {% if perms.investor.view_shareholderreleasehistory %}
              <li class="{% active request 'investor:release_history' 'active' %}">
                 <a href="{% url 'investor:release_history' %}">
                   <i class="nc-icon nc-badge"></i>

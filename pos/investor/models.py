@@ -5,7 +5,7 @@ from investor.manager import InvestorManager, InvestHistoryManager, ReleaseHisto
 
 
 class ShareHolder(models.Model):
-    joining_date = models.DateTimeField(default=now)
+    joining_date = models.DateField(default=now)
     name = models.CharField(max_length=100)
     phone_no = models.CharField(max_length=11, unique=True)
     address = models.CharField(max_length=255, blank=True, null=True)

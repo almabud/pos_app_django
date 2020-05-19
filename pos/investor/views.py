@@ -3,11 +3,15 @@ import json
 from datetime import datetime
 from json import JSONEncoder
 
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core import serializers
+from django.core.exceptions import PermissionDenied
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Count, Sum, F, QuerySet
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
+from django.urls import reverse
 from django.utils.timezone import localtime, now
 from django.views.generic import TemplateView
 
@@ -16,24 +20,34 @@ from investor.models import ShareHolder, InvestHistory, ShareHolderReleaseHistor
 from product.models import OrderedItem
 
 
-class InvestorList(TemplateView):
+class InvestorList(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     template_name = 'investor/investor.html'
+    permission_required = ('investor.view_shareholder')
+
+    def handle_no_permission(self):
+        messages.error(self.request, 'You have no permission')
+        return HttpResponseRedirect(reverse('dashboard:dashboard'))
 
     def get_context_data(self, **kwargs):
+        if self.request.user.has_perm('investor.add_shareholder', 'investor.add_investhistory'):
+            kwargs['investor_form'] = InvestorForm()
+            kwargs['invest_form'] = InvestForm()
         kwargs['investors'] = ShareHolder.objects.all_investor()
-        kwargs['investor_form'] = InvestorForm()
-        kwargs['invest_form'] = InvestForm()
         return super().get_context_data(**kwargs)
 
     def post(self, request):
         data = request.POST
         if request.is_ajax():
             if 'dlt_id' in data:
+                if not self.request.user.has_perm('investor.delete_shareholder'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 if ShareHolder.objects.release_investor(data['dlt_id']):
                     return JsonResponse("success", status=201, safe=False)
                 else:
                     return JsonResponse("error", status=400, safe=False)
             else:
+                if not self.request.user.has_perm('investor.add_shareholder'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 investor_form = InvestorForm(data)
                 invest_form = InvestForm(data)
                 if not investor_form.is_valid() and not investor_form.is_valid():
@@ -45,8 +59,9 @@ class InvestorList(TemplateView):
                 if investor_form.is_valid() and invest_form.is_valid():
                     investor_data = investor_form.cleaned_data
                     invest_data = invest_form.cleaned_data
+                    # This update method is for updating the dict
                     investor_data.update(**invest_data)
-                    new_investor = ShareHolder.objects.create_investor(data)
+                    new_investor = ShareHolder.objects.create_investor(investor_data)
                     new_investor_data = {
                         'id': new_investor.id,
                         'joining_date': datetime.strftime(new_investor.joining_date, '%d/%m/%Y'),
@@ -58,8 +73,13 @@ class InvestorList(TemplateView):
                 return JsonResponse("error", status=400, safe=False)
 
 
-class ReleaseHistory(TemplateView):
+class ReleaseHistory(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     template_name = 'investor/relase_history.html'
+    permission_required = ('investor.view_shareholderreleasehistory',)
+
+    def handle_no_permission(self):
+        messages.error(self.request, 'You have no permission')
+        return HttpResponseRedirect(reverse('dashboard:dashboard'))
 
     def get_context_data(self, **kwargs):
         kwargs['release_histories'] = ShareHolderReleaseHistory.objects.get_all_release_history()
@@ -71,6 +91,8 @@ class ReleaseHistory(TemplateView):
                 id = request.POST['id']
             else:
                 return JsonResponse("error", status=400, safe=False)
+            if not self.request.user.has_perm('investor.view_shareholderreleasehistory'):
+                return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
             if ShareHolderReleaseHistory.objects.delete_release_history(id):
                 return JsonResponse("success", status=201, safe=False)
             else:
@@ -89,8 +111,13 @@ class JsonSerializer(JSONEncoder):
         return data
 
 
-class ShareholderDetails(TemplateView):
+class ShareholderDetails(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     template_name = 'investor/investor_details.html'
+    permission_required = ('investor.view_shareholder',)
+
+    def handle_no_permission(self):
+        messages.error(self.request, 'You have no permission')
+        return HttpResponseRedirect(reverse('dashboard:dashboard'))
 
     def get_context_data(self, **kwargs):
         id = kwargs['shareholder_id']
@@ -118,7 +145,7 @@ class ShareholderDetails(TemplateView):
                                                                                  invest_history=investor_details.invest_history,
                                                                                  invest_max_date=max_date)
             profit['invest_history'] = json.dumps(copy.deepcopy(investor_profit['invest_history']),
-                                                             cls=JsonSerializer)
+                                                  cls=JsonSerializer)
             # profit['invest_history'] = copy.deepcopy(investor_profit['invest_history'])
             profit['this_month_profit'] = investor_profit['total_profit']
             profit['this_month_profit_percent'] = (investor_profit['total_profit'] * 100.0) / profit['net_profit']
@@ -129,12 +156,13 @@ class ShareholderDetails(TemplateView):
                 investor_details.latest_profit_percent = profit['this_month_profit_percent']
 
         investor_details.total_earning = total_profit
-        kwargs['investor_form'] = InvestorForm(initial={
-            'name': investor_details.name,
-            'phone_no': investor_details.phone_no,
-            'address': investor_details.address
-        })
-        kwargs['invest_form'] = InvestForm()
+        if self.request.user.has_perm('investor.add_shareholder', 'investor.add_investhistory'):
+            kwargs['investor_form'] = InvestorForm(initial={
+                'name': investor_details.name,
+                'phone_no': investor_details.phone_no,
+                'address': investor_details.address
+            })
+            kwargs['invest_form'] = InvestForm()
         kwargs['investor_details'] = investor_details
         kwargs['profit_details'] = all_month_profit
 
@@ -145,12 +173,18 @@ class ShareholderDetails(TemplateView):
             data = request.POST
             investor = None
             if 'id' in data:
+                if not self.request.user.has_perm('investor.chane_shareholder'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 investor = get_object_or_404(ShareHolder, pk=data['id'])
                 investor_form = InvestorForm(data, instance=investor)
             else:
                 investor_form = InvestorForm(data)
+            if not self.request.user.has_perm('investor.add_investhistory'):
+                return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
             invest_form = InvestForm(data)
             if 'dlt_id' in data:
+                if not self.request.user.has_perm('investor.delete_investhistory'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 if InvestHistory.objects.release_invest(data['dlt_id']):
                     return JsonResponse('success', status=201, safe=False)
                 else:
