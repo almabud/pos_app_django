@@ -72,7 +72,7 @@ class ProductVariant(models.Model):
     discount_percent = models.IntegerField(default=0)
     discount_min_purchase = models.IntegerField(default=0)
     category = models.ForeignKey(Category, related_name='product_category', on_delete=models.CASCADE)
-    color = models.ForeignKey(Color, related_name='product_color', on_delete=models.CASCADE, null=True, blank=True)
+    color = models.ForeignKey(Color, related_name='product_color', on_delete=models.SET_NULL, null=True, blank=True)
     size = models.ForeignKey(Size, related_name='product_size', on_delete=models.CASCADE)
     stock_total = models.IntegerField(default=0)
     product = models.ForeignKey(Product, related_name='variant', on_delete=models.CASCADE)

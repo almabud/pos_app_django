@@ -88,8 +88,13 @@ class ProductDetails(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
                 return JsonResponse(form.errors, status=400)
 
 
-class VariantList(TemplateView):
+class VariantList(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    permission_required = ('product.view_product', 'product.view_productvariant')
     template_name = 'product/variant_list.html'
+
+    def handle_no_permission(self):
+        messages.error(self.request, 'You have no permission')
+        return HttpResponseRedirect(reverse('dashboard:dashboard'))
 
     def get_context_data(self, **kwargs):
         kwargs['product_list'] = Product.objects.get_all_product()
@@ -110,12 +115,16 @@ class VariantList(TemplateView):
                 return True
 
             if 'variant_id' in data and data['variant_id']:
+                if not self.request.user.has_perm('product.delete_productvariant'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 id = data['variant_id']
                 if ProductVariant.objects.delete_variant(id):
                     return JsonResponse('success', status=200, safe=False)
                 else:
                     return JsonResponse('error', status=400, safe=False)
             elif 'size' in data and data['size']:
+                if not self.request.user.has_perm('product.change_size'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 if check_is_edited():
                     if data['is_edited'] == '0':
                         if Size.objects.filter(size__iexact=data['size']).count() > 0:
@@ -124,6 +133,8 @@ class VariantList(TemplateView):
                         return JsonResponse('success', status=200, safe=False)
 
             elif 'color' in data and data['color']:
+                if not self.request.user.has_perm('product.change_color'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 if check_is_edited():
                     if data['is_edited'] == '0':
                         if Color.objects.filter(color__iexact=data['color']).count() > 0:
@@ -131,6 +142,8 @@ class VariantList(TemplateView):
                     if Color.objects.update_color(data['id'], data['color']):
                         return JsonResponse('success', status=200, safe=False)
             elif 'category' in data and data['category']:
+                if not self.request.user.has_perm('product.change_category'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 if check_is_edited():
                     if data['is_edited'] == '0':
                         if Category.objects.filter(category__iexact=data['category']).count() > 0:
@@ -138,16 +151,22 @@ class VariantList(TemplateView):
                     if Category.objects.update_category(data['id'], data['category']):
                         return JsonResponse('success', status=200, safe=False)
             elif 'size_id' in data and data['size_id']:
+                if not self.request.user.has_perm('product.delete_size'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 id = data['size_id']
                 variants = Size.objects.delete_size(id)
                 return JsonResponse(variants, status=200, safe=False)
             elif 'color_id' in data and data['color_id']:
+                if not self.request.user.has_perm('product.delete_color'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 id = data['color_id']
                 if Color.objects.delete_color(id):
                     return JsonResponse('success', status=200, safe=False)
                 else:
                     return JsonResponse('error', status=400, safe=False)
             elif 'category_id' in data and data['category_id']:
+                if not self.request.user.has_perm('product.delete_category'):
+                    return JsonResponse({'permission_denied': 'Permission denied'}, status=400, safe=False)
                 id = data['category_id']
                 variants = Category.objects.delete_category(id)
                 return JsonResponse(variants, status=200, safe=False)

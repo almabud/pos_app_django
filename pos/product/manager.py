@@ -223,7 +223,7 @@ class ProductManager(models.Manager):
             product.save(using=self.db)
             from product.models import SupplierTransaction
             supplier = SupplierTransaction(supplier=supplier, product=product, total_supplied=fields['stock_total'],
-                                           purchase_price=fields['bag_purchase_price'])
+                                           per_product_purchase_price=fields['bag_purchase_price'])
             supplier.save(using=self.db)
             return product
         else:
