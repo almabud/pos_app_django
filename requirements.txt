@@ -40,7 +40,7 @@ switch==1.1.0
 tenv==0.1.0
 tini==3.0.1
 typed-ast==1.4.1
-urllib3==1.25.8
+urllib3==1.26.5
 virtualenv==16.7.5
 virtualenv-clone==0.5.3
 virtualenvwrapper-win==1.2.5
